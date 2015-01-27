@@ -3,8 +3,6 @@
 use strict;
 use warnings;
 
-use Log::Any::Adapter ('Stdout');
-
 use Text::Table::Manifold ':constants';
 
 # -----------
@@ -20,14 +18,16 @@ $table -> data(
 	['upper_name', 'varchar(255)', 'not null', '', ''],
 ]);
 
+$table -> align(justify_center);
+$table -> padding(1);
 $table -> style(as_boxed);
 
-print "As boxed: \n";
+print "Style: as_boxed: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
-$table -> style(as_markdown);
+$table -> style(as_github);
 
-print "As markdown: \n";
+print "Style: as_github: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";

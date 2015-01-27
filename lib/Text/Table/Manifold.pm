@@ -1,26 +1,48 @@
 package Text::Table::Manifold;
 
 use strict;
-use utf8;
 use warnings;
 use warnings qw(FATAL utf8); # Fatalize encoding glitches.
 use open     qw(:std :utf8); # Undeclared streams in UTF-8.
 
 use Const::Exporter constants =>
 [
-	as_markdown    =>  0, # The default.
-	as_boxed       =>  1,
+	# Values for style.
+
+	as_boxed       =>  0, # The default.
+	as_github      =>  1,
+
+	# Values of centering.
+
+	justify_left   =>  0,
+	justify_center =>  1,
+	justify_right  =>  2,
+
+	# Values for handling missing data.
+
+	undef_as_empty =>  0,
+	undef_as_minus =>  1,
+	undef_as_text  =>  2, # 'undef'.
+	empty_as_empty =>  4,
+	empty_as_minus =>  8,
+	empty_as_text  => 16, # 'empty'.
 ];
 
 use List::AllUtils 'max';
 
-use Log::Any;
-
 use Moo;
 
-use Types::Standard qw/Any ArrayRef HashRef Str/;
+use Types::Standard qw/Any ArrayRef HashRef Int Str/;
 
 use Unicode::GCString;
+
+has align =>
+(
+	default  => sub{return justify_center},
+	is       => 'rw',
+	isa      => Int,
+	required => 0,
+);
 
 has data =>
 (
@@ -54,14 +76,6 @@ has header_widths =>
 	required => 0,
 );
 
-has log =>
-(
-	default  => sub { return Log::Any -> get_logger },
-	is       => 'ro',
-	isa      => Any,
-	required => 0,
-);
-
 has options =>
 (
 	default  => sub{return {} },
@@ -70,11 +84,19 @@ has options =>
 	required => 0,
 );
 
+has padding =>
+(
+	default  => sub{return 0},
+	is       => 'rw',
+	isa      => Int,
+	required => 0,
+);
+
 has style =>
 (
-	default  => sub{return 'boxed'},
+	default  => sub{return as_boxed},
 	is       => 'rw',
-	isa      => Str,
+	isa      => Int,
 	required => 0,
 );
 
@@ -90,11 +112,40 @@ our $VERSION = '1.00';
 
 # ------------------------------------------------
 
-sub BUILD
+sub align_center
 {
-	my($self) = @_;
+	my($self, $s, $width, $padding) = @_;
+	my($s_width) = Unicode::GCString -> new($s) -> chars;
+	my($left)    = int( ($width - $s_width) / 2);
+	my($right)   = $width - $s_width - $left;
 
-} # End of BUILD.
+	return (' ' x ($left + $padding) ) . $s . (' ' x ($right + $padding) );
+
+} # End of align_center;
+
+# ------------------------------------------------
+
+sub align_left
+{
+	my($self, $s, $width, $padding) = @_;
+	my($s_width) = Unicode::GCString -> new($s) -> chars;
+	my($left)    = $width - $s_width;
+
+	return (' ' x ($left + $padding) ) . $s . ' ';
+
+} # End of align_left;
+
+# ------------------------------------------------
+
+sub align_right
+{
+	my($self, $s, $width, $padding) = @_;
+	my($s_width) = Unicode::GCString -> new($s) -> chars;
+	my($right)   = $width - $s_width;
+
+	return ' ' . $s . (' ' x ($right + $padding) );
+
+} # End of align_right;
 
 # ------------------------------------------------
 
@@ -108,7 +159,7 @@ sub gather_statistics
 	{
 		$column_count = $#{$$data[$row]};
 
-		die "# of data columns (@{[$column_count]}) != # of header columns (@{[$#$headers]})\n" if ($column_count != $#$headers);
+		die "Error: # of data columns (@{[$column_count]}) != # of header columns (@{[$#$headers]})\n" if ($column_count != $#$headers);
 	}
 
 	my(@header_widths);
@@ -134,43 +185,6 @@ sub gather_statistics
 
 # ------------------------------------------------
 
-sub pad_center
-{
-	my($self, $s, $width) = @_;
-	my($s_width) = Unicode::GCString -> new($s) -> chars;
-	my($left)    = int( ($width - $s_width) / 2);
-	my($right)   = $width - $s_width - $left;
-
-	return (' ' x ($left + 1) ) . $s . (' ' x ($right + 1) );
-
-} # End of pad_center;
-
-# ------------------------------------------------
-
-sub pad_left
-{
-	my($self, $s, $width) = @_;
-	my($s_width) = Unicode::GCString -> new($s) -> chars;
-	my($left)    = $width - $s_width;
-
-	return (' ' x ($left + 1) ) . $s . ' ';
-
-} # End of pad_left;
-
-# ------------------------------------------------
-
-sub pad_right
-{
-	my($self, $s, $width) = @_;
-	my($s_width) = Unicode::GCString -> new($s) -> chars;
-	my($right)   = $width - $s_width;
-
-	return ' ' . $s . (' ' x ($right + 1) );
-
-} # End of pad_right;
-
-# ------------------------------------------------
-
 sub render
 {
 	my($self) = @_;
@@ -179,15 +193,15 @@ sub render
 
 	if ($self -> style == as_boxed)
 	{
-		$output = $self -> render_boxed;
+		$output = $self -> render_as_boxed;
 	}
-	elsif ($self -> style == as_markdown)
+	elsif ($self -> style == as_github)
 	{
-		$output = $self -> render_markdown;
+		$output = $self -> render_as_github;
 	}
 	else
 	{
-		$self -> log -> error('Style not implemented: ' . $self -> style);
+		die 'Error: Style not implemented: ' . $self -> style . "\n";
 	}
 
 	return $output;
@@ -196,7 +210,7 @@ sub render
 
 # ------------------------------------------------
 
-sub render_boxed
+sub render_as_boxed
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -207,12 +221,13 @@ sub render_boxed
 	my($widths)    = $self -> widths;
 	my($separator) = '+' . join('+', map{'-' x ($_ + 2)} @$widths) . '+';
 	my(@output)    = $separator;
+	my($padding)   = $self -> padding;
 
 	my(@s);
 
 	for my $column (0 .. $#$widths)
 	{
-		push @s, $self -> pad_center($$headers[$column], $$widths[$column]);
+		push @s, $self -> align_center($$headers[$column], $$widths[$column], $padding);
 	}
 
 	push @output, '|' . join('|', @s) . '|';
@@ -224,7 +239,7 @@ sub render_boxed
 
 		for my $column (0 .. $#$widths)
 		{
-			push @s, $self -> pad_center($$data[$row][$column], $$widths[$column]);
+			push @s, $self -> align_center($$data[$row][$column], $$widths[$column], $padding);
 		}
 
 		push @output, '|' . join('|', @s) . '|';
@@ -234,11 +249,11 @@ sub render_boxed
 
 	return [@output];
 
-} # End of render_boxed.
+} # End of render_as_boxed.
 
 # ------------------------------------------------
 
-sub render_markdown
+sub render_as_github
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -259,7 +274,7 @@ sub render_markdown
 
 	return [@output];
 
-} # End of render_markdown.
+} # End of render_as_github.
 
 # ------------------------------------------------
 
@@ -275,15 +290,83 @@ C<Text::Table::Manifold> - Render tables in manifold styles
 
 This is scripts/synopsis.pl:
 
+	#!/usr/bin/env perl
+
+	use strict;
+	use warnings;
+
+	use Text::Table::Manifold ':constants';
+
+	# -----------
+
+	my($table) = Text::Table::Manifold -> new;
+
+	$table -> headers(['Name', 'Type', 'Null', 'Key', 'Auto increment']);
+	$table -> data(
+	[
+		['id', 'int(11)', 'not null', 'primary key', 'auto_increment'],
+		['description', 'varchar(255)', 'not null', '', ''],
+		['name', 'varchar(255)', 'not null', '', ''],
+		['upper_name', 'varchar(255)', 'not null', '', ''],
+	]);
+
+	$table -> style(as_boxed);
+
+	print "Style: as_boxed: \n";
+	print join("\n", @{$table -> render}), "\n";
+	print "\n";
+
+	$table -> style(as_github);
+
+	print "Style: as_github: \n";
+	print join("\n", @{$table -> render}), "\n";
+	print "\n";
+
 This is the output of synopsis.pl:
 
+	Style: as_boxed:
+	+-------------+--------------+----------+-------------+----------------+
+	|    Name     |     Type     |   Null   |     Key     | Auto increment |
+	+-------------+--------------+----------+-------------+----------------+
+	|     id      |   int(11)    | not null | primary key | auto_increment |
+	| description | varchar(255) | not null |             |                |
+	|    name     | varchar(255) | not null |             |                |
+	| upper_name  | varchar(255) | not null |             |                |
+	+-------------+--------------+----------+-------------+----------------+
+
+	Style: as_github:
+	Name|Type|Null|Key|Auto increment
+	----|----|----|---|--------------
+	id|int(11)|not null|primary key|auto_increment
+	description|varchar(255)|not null||
+	name|varchar(255)|not null||
+	upper_name|varchar(255)|not null||
+
 =head1 Description
+
+Renders your data as tables of various types:
+
+=over 4
+
+=item o as_boxed
+
+All headers and table data are surrounded by ASCII characters.
+
+=item o as_github
+
+As github-flavoured markdown.
+
+=back
+
+See data/*.log for output corresponding to scripts/*.pl.
 
 See the L</FAQ> for various topics, including:
 
 =over 4
 
 =item o UFT8 handling
+
+See scripts/utf8.pl and data/utf8.log.
 
 =back
 
@@ -327,29 +410,76 @@ C<new()> is called as C<< my($parser) = Text::Table::Manifold -> new(k1 => v1, k
 It returns a new object of type C<Text::Table::Manifold>.
 
 Key-value pairs accepted in the parameter list (see corresponding methods for details
-[e.g. L</text([$stringref])>]):
+[e.g. L</data([$arrayref])>]):
 
 =over 4
 
-=item o close => $arrayref
+=item o data => $arrayref of arrayrefs
 
-An arrayref of strings, each one a closing delimiter.
+An arrayref of arrayrefs, each one a line of data.
 
-The # of elements must match the # of elements in the 'open' arrayref.
+The # of elements in each row must match the # of elements in the C<headers> arrayref (if any).
 
-See the L</FAQ> for details and warnings.
+See the L</FAQ> for details.
 
-A value for this option is mandatory.
+A value for this option is optional.
 
-Default: None.
+Default: [].
+
+=item o style => An imported constant
+
+A value for this option is optional.
+
+Default: as_boxed.
 
 =back
 
 =head1 Methods
 
-=head2 bnf()
+=head2 data([$arrayref])
 
-Returns a string containing the grammar constructed based on user input.
+Here, the [] indicate an optional parameter.
+
+Returns the data as an arrayref. Each element in this arrayref is an arrayref of one row of data.
+
+The structure of C<$arrayref>, if provided, must match the description in the line above.
+
+All rows must have the same number of elements.
+
+Use Perl's C<undef> or '' (the empty string) for missing values.
+
+See L</missing_data([$option])> for how C<undef> and '' are handled.
+
+=head2 headers([$arrayref])
+
+Here, the [] indicate an optional parameter.
+
+Returns the headers as an arrayref of strings.
+
+The structure of C<$arrayref>, if provided, must be an arrayref of strings.
+
+=head2 missing_data([$option])
+
+Here, the [] indicate an optional parameter.
+
+Returns the missing data option.
+
+=head2 style([$style])
+
+Here, the [] indicate an optional parameter.
+
+Returns the style as a constant (actually an integer).
+
+The C<$style>, if provided, must be one of the following:
+
+=over 4
+
+=item o as_boxed => 0
+
+=item o as_github => 1
+
+=back
+
 
 =head1 FAQ
 
