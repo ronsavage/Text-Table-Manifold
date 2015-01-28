@@ -11,6 +11,7 @@ use Const::Exporter constants =>
 
 	as_boxed       => 0, # The default.
 	as_github      => 1,
+	as_html        => 2,
 
 	# Values of alignment().
 
@@ -73,6 +74,14 @@ has escapes =>
 	required => 0,
 );
 
+has footers =>
+(
+	default  => sub{return []},
+	is       => 'rw',
+	isa      => ArrayRef,
+	required => 0,
+);
+
 has headers =>
 (
 	default  => sub{return []},
@@ -81,19 +90,19 @@ has headers =>
 	required => 0,
 );
 
-has options =>
-(
-	default  => sub{return {} },
-	is       => 'rw',
-	isa      => HashRef,
-	required => 0,
-);
-
 has padding =>
 (
 	default  => sub{return 0},
 	is       => 'rw',
 	isa      => Int,
+	required => 0,
+);
+
+has pass_thru =>
+(
+	default  => sub{return {} },
+	is       => 'rw',
+	isa      => HashRef,
 	required => 0,
 );
 
@@ -167,11 +176,16 @@ sub align_right
 
 sub _clean_data
 {
-	my($self, $headers, $data) = @_;
+	my($self, $headers, $data, $footers) = @_;
 
 	for my $column (0 .. $#$headers)
 	{
 		$$headers[$column] = defined($$headers[$column]) ? $$headers[$column] : '-';
+	}
+
+	for my $column (0 .. $#$footers)
+	{
+		$$footers[$column] = defined($$footers[$column]) ? $$footers[$column] : '-';
 	}
 
 	my($empty) = $self -> empty;
@@ -212,9 +226,9 @@ sub _clean_data
 
 sub gather_statistics
 {
-	my($self, $headers, $data) = @_;
+	my($self, $headers, $data, $footers) = @_;
 
-	$self -> _clean_data($headers, $data);
+	$self -> _clean_data($headers, $data, $footers);
 
 	my($column_count);
 
@@ -231,7 +245,7 @@ sub gather_statistics
 
 	for my $column (0 .. $#$headers)
 	{
-		@column = $$headers[$column];
+		@column = ($$headers[$column], $$footers[$column]);
 
 		for my $row (0 .. $#$data)
 		{
@@ -261,6 +275,10 @@ sub render
 	{
 		$output = $self -> render_as_github;
 	}
+	elsif ($self -> style == as_html)
+	{
+		$output = $self -> render_as_html;
+	}
 	else
 	{
 		die 'Error: Style not implemented: ' . $self -> style . "\n";
@@ -277,8 +295,9 @@ sub render_as_boxed
 	my($self)    = @_;
 	my($headers) = $self -> headers;
 	my($data)    = $self -> data;
+	my($footers) = $self -> footers;
 
-	$self -> gather_statistics($headers, $data);
+	$self -> gather_statistics($headers, $data, $footers);
 
 	my($padding)   = $self -> padding;
 	my($widths)    = $self -> widths;
@@ -320,14 +339,11 @@ sub render_as_github
 	my($self)    = @_;
 	my($headers) = $self -> headers;
 	my($data)    = $self -> data;
+	my($footers) = $self -> footers;
 
-	$self -> gather_statistics($headers, $data);
+	$self -> gather_statistics($headers, $data, $footers);
 
-	my(@output) = join('|', @$headers);
-
-	push @output, join('|', map{'-' x $_} @{$self -> widths});
-
-	my($width);
+	my(@output) = (join('|', @$headers), join('|', map{'-' x $_} @{$self -> widths}) );
 
 	for my $row (0 .. $#$data)
 	{
@@ -337,6 +353,46 @@ sub render_as_github
 	return [@output];
 
 } # End of render_as_github.
+
+# ------------------------------------------------
+
+sub render_as_html
+{
+	my($self)    = @_;
+	my($headers) = $self -> headers;
+	my($data)    = $self -> data;
+	my($footers) = $self -> footers;
+
+	$self -> gather_statistics($headers, $data, $footers);
+
+	# What if there are no headers!
+
+	my(@output) = "<table>";
+
+	if ($#$headers >= 0)
+	{
+		push @output, '<thead>';
+		push @output, '<th>' . join('</th><th>', @$headers) . '</th>' if ($#$headers >= 0);
+		push @output, '</thead>';
+	}
+
+	for my $row (0 .. $#$data)
+	{
+		push @output, '<tr><td>' . join('</td><td>', map{defined($_) ? $_ : ''} @{$$data[$row]}) . '</td></tr>';
+	}
+
+	if ($#$footers >= 0)
+	{
+		push @output, '<tfoot>';
+		push @output, '<th>' . join('<th></th>', @$footers) . '</th>' if ($#$footers >= 0);
+		push @output, '<tfoot>';
+	}
+
+	push @output, '</table>';
+
+	return [@output];
+
+} # End of render_as_html.
 
 # ------------------------------------------------
 
@@ -423,6 +479,10 @@ All headers and table data are surrounded by ASCII characters.
 =item o as_github
 
 As github-flavoured markdown.
+
+=item o as_html
+
+As a HTML table.
 
 =back
 
@@ -517,6 +577,14 @@ A value for this parameter is optional.
 See the L</FAQ> for details.
 
 Default: 0.
+
+=item o pass_thru => $hashref
+
+A hashref of values to pass thru to another object. Used with C<as_csv>.
+
+See the L</FAQ> for details.
+
+Default: {}.
 
 =item o style => An imported constant
 
@@ -630,7 +698,7 @@ Note: The integer values are just here for completeness. Use the constants on th
 
 =head2 What are the constants for handling missing data?
 
-The C<missing data option>, if provided, must be one of the following:
+The C<missing data option>, if provided, must be one or two of the following:
 
 =over 4
 
@@ -680,9 +748,11 @@ The C<style>, if provided, must be one of the following:
 
 =over 4
 
-=item o as_boxed => 0
+=item o as_boxed  => 0
 
 =item o as_github => 1
+
+=item o as_html   => 2
 
 =back
 

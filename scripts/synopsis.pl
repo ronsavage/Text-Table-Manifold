@@ -18,6 +18,7 @@ $table -> data(
 	['upper_name', 'varchar(255)', 'not null', '', ''],
 	[undef, '', '', '', ''],
 ]);
+$table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
 $table -> alignment(justify_center);
 $table -> empty(empty_as_minus);
 $table -> undef(undef_as_text);
@@ -31,5 +32,11 @@ print "\n";
 $table -> style(as_github);
 
 print "Style: as_github: \n";
+print join("\n", @{$table -> render}), "\n";
+print "\n";
+
+$table -> style(as_html);
+
+print "Style: as_html: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
