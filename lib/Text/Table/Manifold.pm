@@ -18,17 +18,19 @@ use Const::Exporter constants =>
 	justify_center => 1,
 	justify_right  => 2,
 
-	# Values for handling missing data.
+	# Values for empty(), i.e. empty string handling.
 
-	empty_as_empty => 0,
+	empty_as_empty => 0, # Do nothing.
 	empty_as_minus => 1,
 	empty_as_text  => 2, # 'empty'.
 	empty_as_undef => 3,
 
+	# Values for undef(), i.e. undef handling.
+
 	undef_as_empty => 0,
 	undef_as_minus => 1,
 	undef_as_text  => 2, # 'undef'.
-	undef_as_undef => 3,
+	undef_as_undef => 3, # Do nothing.
 ];
 
 use List::AllUtils 'max';
@@ -55,27 +57,19 @@ has data =>
 	required => 0,
 );
 
+has empty =>
+(
+	default  => sub{return empty_as_empty},
+	is       => 'rw',
+	isa      => Int,
+	required => 0,
+);
+
 has escapes =>
 (
 	default  => sub{return []},
 	is       => 'rw',
 	isa      => ArrayRef,
-	required => 0,
-);
-
-has handle_empty =>
-(
-	default  => sub{return 0},
-	is       => 'rw',
-	isa      => Int,
-	required => 0,
-);
-
-has handle_undef =>
-(
-	default  => sub{return 0},
-	is       => 'rw',
-	isa      => Int,
 	required => 0,
 );
 
@@ -106,6 +100,14 @@ has padding =>
 has style =>
 (
 	default  => sub{return as_boxed},
+	is       => 'rw',
+	isa      => Int,
+	required => 0,
+);
+
+has undef =>
+(
+	default  => sub{return undef_as_undef},
 	is       => 'rw',
 	isa      => Int,
 	required => 0,
@@ -172,8 +174,8 @@ sub _clean_data
 		$$headers[$column] = defined($$headers[$column]) ? $$headers[$column] : '-';
 	}
 
-	my($empty) = $self -> handle_empty;
-	my($undef) = $self -> handle_undef;
+	my($empty) = $self -> empty;
+	my($undef) = $self -> undef;
 
 	my($s);
 
@@ -368,8 +370,11 @@ This is scripts/synopsis.pl:
 		['description', 'varchar(255)', 'not null', '', ''],
 		['name', 'varchar(255)', 'not null', '', ''],
 		['upper_name', 'varchar(255)', 'not null', '', ''],
+		[undef, '', '', '', ''],
 	]);
-	$table -> align(justify_center);
+	$table -> alignment(justify_center);
+	$table -> empty(empty_as_minus);
+	$table -> undef(undef_as_text);
 	$table -> padding(1);
 	$table -> style(as_boxed);
 
@@ -390,18 +395,20 @@ This is the output of synopsis.pl:
 	|    Name     |     Type     |   Null   |     Key     | Auto increment |
 	+-------------+--------------+----------+-------------+----------------+
 	|     id      |   int(11)    | not null | primary key | auto_increment |
-	| description | varchar(255) | not null |             |                |
-	|    name     | varchar(255) | not null |             |                |
-	| upper_name  | varchar(255) | not null |             |                |
+	| description | varchar(255) | not null |      -      |       -        |
+	|    name     | varchar(255) | not null |      -      |       -        |
+	| upper_name  | varchar(255) | not null |      -      |       -        |
+	|    undef    |      -       |    -     |      -      |       -        |
 	+-------------+--------------+----------+-------------+----------------+
 
 	Style: as_github:
 	Name|Type|Null|Key|Auto increment
-	----|----|----|---|--------------
+	-----------|------------|--------|-----------|--------------
 	id|int(11)|not null|primary key|auto_increment
-	description|varchar(255)|not null||
-	name|varchar(255)|not null||
-	upper_name|varchar(255)|not null||
+	description|varchar(255)|not null|-|-
+	name|varchar(255)|not null|-|-
+	upper_name|varchar(255)|not null|-|-
+	undef|-|-|-|-
 
 =head1 Description
 
@@ -495,21 +502,13 @@ A value for this parameter is optional.
 
 Default: [].
 
-=item o handle_empty => An imported constant
+=item o empty => An imported constant
 
 A value for this parameter is optional.
 
 See the L</FAQ> for details.
 
 Default: empty_as_empty. I.e. do not transform.
-
-=item o handle_undef => An imported constant
-
-A value for this parameter is optional.
-
-See the L</FAQ> for details.
-
-Default: undef_as_empty (sic).
 
 =item o padding => $integer
 
@@ -526,6 +525,14 @@ A value for this parameter is optional.
 See the L</FAQ> for details.
 
 Default: as_boxed.
+
+=item o undef => An imported constant
+
+A value for this parameter is optional.
+
+See the L</FAQ> for details.
+
+Default: undef_as_undef.
 
 =back
 
@@ -553,27 +560,19 @@ All rows must have the same number of elements.
 
 Use Perl's C<undef> or '' (the empty string) for missing values.
 
-See L</handle_empty([$option])> and L</handle_undef([$option])> for how C<undef> and '' are handled.
+See L</empty([$option])> and L</undef([$option])> for how C<undef> and '' are handled.
 
-=head2 handle_empty([$option])
+=head2 empty([$option])
 
 Here, the [] indicate an optional parameter.
 
-Returns the option speciying how empty cell values ('') are being dealt with, as a constant.
+Returns the option specifying how empty cell values ('') are being dealt with, as a constant.
 
 Controls how empty strings in cells are rendered.
 
 See the L</FAQ#What are the constants for missing data?>.
 
-=head2 handle_undef([$option])
-
-Here, the [] indicate an optional parameter.
-
-Returns the option speciying how undef cell values are being dealt with, as a constant.
-
-Controls how undefs in cells are rendered.
-
-See the L</FAQ#What are the constants for missing data?>.
+See also L</undef([$option])>.
 
 =head2 headers([$arrayref])
 
@@ -598,6 +597,18 @@ Here, the [] indicate an optional parameter.
 Returns the style as a constant (actually an integer).
 
 See the L</FAQ#What are the constants for styling?>.
+
+=head2 undef([$option])
+
+Here, the [] indicate an optional parameter.
+
+Returns the option specifying how undef cell values are being dealt with, as a constant.
+
+Controls how undefs in cells are rendered.
+
+See the L</FAQ#What are the constants for missing data?>.
+
+See also L</undef([$option])>.
 
 =head1 FAQ
 
@@ -625,27 +636,39 @@ The C<missing data option>, if provided, must be one of the following:
 
 =item o empty_as_empty => 0
 
-Display empty cell values as the empty string.
+Convert empty cell values to the empty string (''). Really, do nothing.
+
+This is the default.
 
 =item o empty_as_minus => 1
 
-Display empty cell values as '-'.
+Convert empty cell values to '-'.
 
 =item o empty_as_text  => 2
 
-Display empty cell values as 'empty'.
+Convert empty cell values to 'empty'.
 
-=item o undef_as_empty => 4
+=item o empty_as_undef => 3
 
-Display undef cell values as the empty string.
+Convert empty cell values to undef.
 
-=item o undef_as_minus => 8
+=item o undef_as_empty => 0
 
-Display undef cell values as '-'.
+Convert undef cell values to the empty string ('').
 
-=item o undef_as_text  => 16
+=item o undef_as_minus => 1
 
-Display undef cell values as 'undef'.
+Convert undef cell values to '-'.
+
+=item o undef_as_text  => 2
+
+Convert undef cell values to 'undef'.
+
+=item o undef_as_undef => 3
+
+Convert undef cell values to undef. Really, do nothing.
+
+This is the default.
 
 =back
 

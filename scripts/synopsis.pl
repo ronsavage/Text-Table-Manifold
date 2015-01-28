@@ -19,8 +19,8 @@ $table -> data(
 	[undef, '', '', '', ''],
 ]);
 $table -> alignment(justify_center);
-$table -> handle_empty(empty_as_minus);
-$table -> handle_undef(undef_as_text);
+$table -> empty(empty_as_minus);
+$table -> undef(undef_as_text);
 $table -> padding(1);
 $table -> style(as_boxed);
 

@@ -20,8 +20,8 @@ $table -> data(
 	['Two ticks: ✔✔', undef, ''],
 ]);
 
-$table -> handle_empty(empty_as_minus);
-$table -> handle_undef(undef_as_text);
+$table -> empty(empty_as_minus);
+$table -> undef(undef_as_text);
 $table -> padding(2);
 $table -> style(as_boxed);
 
