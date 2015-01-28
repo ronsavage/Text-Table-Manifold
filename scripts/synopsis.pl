@@ -7,7 +7,7 @@ use Text::Table::Manifold ':constants';
 
 # -----------
 
-my($table) = Text::Table::Manifold -> new;
+my($table) = Text::Table::Manifold -> new(alignment => justify_center);
 
 $table -> headers(['Name', 'Type', 'Null', 'Key', 'Auto increment']);
 $table -> data(
@@ -18,8 +18,6 @@ $table -> data(
 	['upper_name', 'varchar(255)', 'not null', '', ''],
 	[undef, '', '', '', ''],
 ]);
-$table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
-$table -> alignment(justify_center);
 $table -> empty(empty_as_minus);
 $table -> undef(undef_as_text);
 $table -> padding(1);
@@ -35,6 +33,8 @@ print "Style: as_github: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
+$table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
+$table -> pass_thru({table => {align => 'center', border => 1} });
 $table -> style(as_html);
 
 print "Style: as_html: \n";

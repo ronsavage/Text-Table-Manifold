@@ -7,12 +7,6 @@ use open     qw(:std :utf8); # Undeclared streams in UTF-8.
 
 use Const::Exporter constants =>
 [
-	# Values for style().
-
-	as_boxed       => 0, # The default.
-	as_github      => 1,
-	as_html        => 2,
-
 	# Values of alignment().
 
 	justify_left   => 0,
@@ -25,6 +19,12 @@ use Const::Exporter constants =>
 	empty_as_minus => 1,
 	empty_as_text  => 2, # 'empty'.
 	empty_as_undef => 3,
+
+	# Values for style().
+
+	as_boxed       => 0, # The default.
+	as_github      => 1,
+	as_html        => 2,
 
 	# Values for undef(), i.e. undef handling.
 
@@ -367,7 +367,16 @@ sub render_as_html
 
 	# What if there are no headers!
 
-	my(@output) = "<table>";
+	my($table)         = '';
+	my($table_options) = ${$self -> pass_thru}{table} || {};
+	my(@table_keys)    = keys %$table_options;
+
+	if (scalar @table_keys)
+	{
+		$table .= ' ' . join(' ', map{qq|$_ = "$$table_options{$_}"|} keys %$table_options);
+	}
+
+	my(@output) = "<table$table>";
 
 	if ($#$headers >= 0)
 	{
@@ -384,7 +393,7 @@ sub render_as_html
 	if ($#$footers >= 0)
 	{
 		push @output, '<tfoot>';
-		push @output, '<th>' . join('<th></th>', @$footers) . '</th>' if ($#$footers >= 0);
+		push @output, '<th>' . join('</th><th>', @$footers) . '</th>' if ($#$footers >= 0);
 		push @output, '<tfoot>';
 	}
 
@@ -580,7 +589,7 @@ Default: 0.
 
 =item o pass_thru => $hashref
 
-A hashref of values to pass thru to another object. Used with C<as_csv>.
+A hashref of values to pass thru to another object.
 
 See the L</FAQ> for details.
 
@@ -638,7 +647,7 @@ Returns the option specifying how empty cell values ('') are being dealt with, a
 
 Controls how empty strings in cells are rendered.
 
-See the L</FAQ#What are the constants for missing data?>.
+See the L</FAQ#What are the constants for handling cell values which are empty strings?>.
 
 See also L</undef([$option])>.
 
@@ -650,6 +659,10 @@ Returns the headers as an arrayref of strings.
 
 The structure of C<$arrayref>, if provided, must be an arrayref of strings.
 
+=head2 new([%hash])
+
+The constructor. See L</Constructor and Initialization> for details of the parameter list.
+
 =head2 padding([$integer])
 
 Here, the [] indicate an optional parameter.
@@ -657,6 +670,14 @@ Here, the [] indicate an optional parameter.
 Returns the padding as a constant (actually an integer).
 
 Padding is the # of spaces on either side of the cell value after it has been aligned.
+
+=head2 pass_thru([$hashref])
+
+Here, the [] indicate an optional parameter.
+
+Returns the hashref previously provided.
+
+The structure of this hashref is detailed in the L</FAQ>.
 
 =head2 style([$style])
 
@@ -674,77 +695,33 @@ Returns the option specifying how undef cell values are being dealt with, as a c
 
 Controls how undefs in cells are rendered.
 
-See the L</FAQ#What are the constants for missing data?>.
+See the L</FAQ#What are the constants for handling cell values which are undef?>.
 
 See also L</undef([$option])>.
 
 =head1 FAQ
 
-=head2 What are the constants for alignment?
+=head2 How are imported constants used?
 
-The C<alignment>, if provided, must be one of the following:
+Firstly, you must import them with:
 
-=over 4
+	use Text::Table::Manifold ':constants';
 
-=item o justify_left => 0
+Then you can use them in the constructor:
 
-=item o justify_left => 1
+	my($table) = Text::Table::Manifold -> new(alignment => justify_center);
 
-=item o justify_right => 2
+And/or you can use them in method calls:
 
-=back
+	$table -> style(as_boxed);
 
-Note: The integer values are just here for completeness. Use the constants on their left.
+See scripts/synopsis.pl for various use cases.
 
-=head2 What are the constants for handling missing data?
-
-The C<missing data option>, if provided, must be one or two of the following:
-
-=over 4
-
-=item o empty_as_empty => 0
-
-Convert empty cell values to the empty string (''). Really, do nothing.
-
-This is the default.
-
-=item o empty_as_minus => 1
-
-Convert empty cell values to '-'.
-
-=item o empty_as_text  => 2
-
-Convert empty cell values to 'empty'.
-
-=item o empty_as_undef => 3
-
-Convert empty cell values to undef.
-
-=item o undef_as_empty => 0
-
-Convert undef cell values to the empty string ('').
-
-=item o undef_as_minus => 1
-
-Convert undef cell values to '-'.
-
-=item o undef_as_text  => 2
-
-Convert undef cell values to 'undef'.
-
-=item o undef_as_undef => 3
-
-Convert undef cell values to undef. Really, do nothing.
-
-This is the default.
-
-=back
-
-Note: The integer values are just here for completeness. Use the constants on their left.
+Note how the code uses the names of the constants. The integer values listed below are just FYI.
 
 =head2 What are the constants for styling?
 
-The C<style>, if provided, must be one of the following:
+The C<style> option must be one of the following:
 
 =over 4
 
@@ -756,23 +733,77 @@ The C<style>, if provided, must be one of the following:
 
 =back
 
-Note: The integer values are just here for completeness. Use the constants on their left.
+=head2 What are the constants for alignment?
+
+The C<alignment> option must be one of the following:
+
+=over 4
+
+=item o justify_left  => 0
+
+=item o justify_left  => 1
+
+=item o justify_right => 2
+
+=back
+
+=head2 What are the constants for handling cell values which are empty strings?
+
+The C<handle_empty> option must be one of the following:
+
+=over 4
+
+=item o empty_as_empty => 0
+
+Do nothing.
+
+This is the default.
+
+=item o empty_as_minus => 1
+
+Convert empty cell values to '-'.
+
+=item o empty_as_text  => 2
+
+Convert empty cell values to the text string 'empty'.
+
+=item o empty_as_undef => 3
+
+Convert empty cell values to undef.
+
+=back
+
+=head2 What are the constants for handling cell values which are undef?
+
+The C<handle_undef> option must be one of the following:
+
+=over 4
+
+=item o undef_as_empty => 0
+
+Convert undef cell values to the empty string ('').
+
+=item o undef_as_minus => 1
+
+Convert undef cell values to '-'.
+
+=item o undef_as_text  => 2
+
+Convert undef cell values to the text string 'undef'.
+
+=item o undef_as_undef => 3
+
+Do nothing.
+
+This is the default.
+
+=back
 
 =head2 How do I run author tests?
 
 This runs both standard and author tests:
 
 	shell> perl Build.PL; ./Build; ./Build authortest
-
-=head1 TODO
-
-=over 4
-
-=item o This
-
-=item o That
-
-=back
 
 =head1 See Also
 
@@ -792,15 +823,43 @@ L<HTML::Table>
 
 L<HTML::Tabulate>
 
+L<LaTeX::Table>
+
+L<Text::ASCIITable>
+
+L<PDF::Table>
+
+L<PDF::TableX>
+
+L<PDF::Report::Table>
+
+L<Table::Simple>
+
+L<Term::TablePrint>
+
+L<Text::ANSITable>
+
 L<Text::ASCIITable>
 
 L<Text::CSV>
 
+L<Text::FormatTable>
+
+L<Text::MarkdownTable>
+
+L<Text::SimpleTable>
+
 L<Text::Table>
+
+L<Text::Table::Tiny>
 
 L<Text::TabularDisplay>
 
 L<Text::Tabulate>
+
+L<Text::UnicodeBox::Table>
+
+L<Text::UnicodeTable::Simple>
 
 L<Tie::Array::CSV>
 
