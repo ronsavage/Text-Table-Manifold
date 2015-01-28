@@ -621,9 +621,11 @@ Here, the [] indicate an optional parameter.
 
 Returns the alignment as a constant (actually an integer).
 
-Alignment controls how many spaces are added to both sides of a cell value.
+$alignment might force spaces to be added to one or both sides of a cell value.
 
-See the L</FAQ#What are the constants for alignment?>.
+This happens before any spaces specified by L</padding([$integer])> are added.
+
+See the L</FAQ#What are the constants for alignment?> for legal values for $alignment.
 
 =head2 data([$arrayref])
 
@@ -631,25 +633,26 @@ Here, the [] indicate an optional parameter.
 
 Returns the data as an arrayref. Each element in this arrayref is an arrayref of one row of data.
 
-The structure of C<$arrayref>, if provided, must match the description in the line above.
+The structure of C<$arrayref>, if provided, must match the description in the previous line.
 
-All rows must have the same number of elements.
+Rows do not need to have the same number of elements.
 
 Use Perl's C<undef> or '' (the empty string) for missing values.
 
-See L</empty([$option])> and L</undef([$option])> for how C<undef> and '' are handled.
+See L</empty([$empty])> and L</undef([$undef])> for how '' and C<undef> are handled.
 
-=head2 empty([$option])
+=head2 empty([$empty])
 
 Here, the [] indicate an optional parameter.
 
-Returns the option specifying how empty cell values ('') are being dealt with, as a constant.
+Returns the option specifying how empty cell values ('') are being dealt with.
 
-Controls how empty strings in cells are rendered.
+$empty controls how empty strings in cells are rendered.
 
-See the L</FAQ#What are the constants for handling cell values which are empty strings?>.
+See the L</FAQ#What are the constants for handling cell values which are empty strings?>
+for legal values for $empty.
 
-See also L</undef([$option])>.
+See also L</undef([$undef])>.
 
 =head2 headers([$arrayref])
 
@@ -657,7 +660,10 @@ Here, the [] indicate an optional parameter.
 
 Returns the headers as an arrayref of strings.
 
-The structure of C<$arrayref>, if provided, must be an arrayref of strings.
+$arrayref, if provided, must be an arrayref of strings.
+
+The # of elements in $arrayref does not have to match the # of elements in each row of the data,
+but really, it should.
 
 =head2 new([%hash])
 
@@ -667,9 +673,9 @@ The constructor. See L</Constructor and Initialization> for details of the param
 
 Here, the [] indicate an optional parameter.
 
-Returns the padding as a constant (actually an integer).
+Returns the padding as an integer.
 
-Padding is the # of spaces on either side of the cell value after it has been aligned.
+Padding is the # of spaces to add to both sides of the cell value after it has been aligned.
 
 =head2 pass_thru([$hashref])
 
@@ -679,27 +685,42 @@ Returns the hashref previously provided.
 
 The structure of this hashref is detailed in the L</FAQ>.
 
+See scripts/synopsis.pl for sample code where it is used to add attributes to the C<table> tag in
+HTML output.
+
+=head2 render()
+
+Returns an arrayref, where each element is 1 line of the output table. These lines do not have "\n"
+or any other line terminator (e.g. <br/>) added by this module.
+
+It's up to you how to handle the output. The simplest thing is to just do:
+
+	print join("\n", @{$table -> render}), "\n";
+
 =head2 style([$style])
 
 Here, the [] indicate an optional parameter.
 
 Returns the style as a constant (actually an integer).
 
-See the L</FAQ#What are the constants for styling?>.
+See the L</FAQ#What are the constants for styling?> for legal values for $style.
 
-=head2 undef([$option])
+=head2 undef([$undef])
 
 Here, the [] indicate an optional parameter.
 
-Returns the option specifying how undef cell values are being dealt with, as a constant.
+Returns the option specifying how undef cell values are being dealt with.
 
-Controls how undefs in cells are rendered.
+$undef controls how undefs in cells are rendered.
 
-See the L</FAQ#What are the constants for handling cell values which are undef?>.
+See the L</FAQ#What are the constants for handling cell values which are undef?>
+for legal values for $undef.
 
-See also L</undef([$option])>.
+See also L</empty([$empty])>.
 
 =head1 FAQ
+
+Note: See L</TODO> for what has not been implemented yet.
 
 =head2 How are imported constants used?
 
@@ -773,6 +794,8 @@ Convert empty cell values to undef.
 
 =back
 
+Warning: This updates the original data!
+
 =head2 What are the constants for handling cell values which are undef?
 
 The C<handle_undef> option must be one of the following:
@@ -799,13 +822,49 @@ This is the default.
 
 =back
 
+Warning: This updates the original data!
+
 =head2 How do I run author tests?
 
 This runs both standard and author tests:
 
 	shell> perl Build.PL; ./Build; ./Build authortest
 
+=head1 TODO
+
+=over 4
+
+=item o Parameters to render()
+
+It would be nice if L</reander()> accepted the same parameters are L</new([%hash])>.
+
+=item o Embedded newlines
+
+Cell values which are HTML could be split at each "<br/>" and "<br />" for the same reason.
+
+Cell values which are text could be split at each "\n" character, to find the widest line within the
+cell. That is then used as the cell's width.
+
+For Unicode, this is complex. See L<http://www.unicode.org/versions/Unicode7.0.0/ch04.pdf>, and
+especially p 192, for 'Line break' controls. Also, the Unicode line breaking algorithm is documented
+in L<http://www.unicode.org/reports/tr14/tr14-33.html>.
+
+Any information you have on Perl classes which help with this will be gratefully received.
+
+=item o Next tables
+
+This really requires the implementation of embedded newline analysis, as per the previous point.
+
+=item o Pass-thru class support
+
+Initially, L<HTML::Table>, L<PDF::Table> and L<Text::CSV> will be supported. The problem is the
+mixture of options required to drive other classes.
+
+=back
+
 =head1 See Also
+
+=head2 Table Rendering
 
 L<Any::Renderer>
 
@@ -862,6 +921,18 @@ L<Text::UnicodeBox::Table>
 L<Text::UnicodeTable::Simple>
 
 L<Tie::Array::CSV>
+
+=head2 Line Breaking, Wrapping, etc
+
+L<Text::Format>
+
+L<Text::LineFold>
+
+L<Text::NWrap>
+
+L<Text::Wrap>
+
+L<Text::WrapI18N>
 
 =head1 Machine-Readable Change Log
 

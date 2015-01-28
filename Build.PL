@@ -42,11 +42,12 @@ $class -> new
 	requires =>
 	{
 		'Const::Exporter'    => 'v0.2.3',
-		'Log::Any'           => 1.03,
+		'List::AllUtils'     => 0.08,
 		'Moo'                => 1.006000,
 		'open'               => 0,
 		'strict'             => 0,
 		'Types::Standard'    => 1.000004,
+		'Unicode::GCString'  => 2013.10,
 		'Unicode::LineBreak' => 2014.06,
 		'utf8'               => 0,
 		'warnings'           => 0,
