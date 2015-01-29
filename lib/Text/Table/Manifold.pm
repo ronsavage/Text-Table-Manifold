@@ -28,10 +28,11 @@ use Const::Exporter constants =>
 
 	# Values for style().
 
-	as_boxed       => 0, # The default.
-	as_csv         => 1,
-	as_github      => 2,
-	as_html        => 3,
+	as_internal_boxed  => 0, # The default.
+	as_csv_text        => 1,
+	as_internal_github => 2,
+	as_internal_html   => 3,
+	as_html_table      => 4,
 
 	# Values for undef(), i.e. undef handling.
 
@@ -119,7 +120,7 @@ has pass_thru =>
 
 has style =>
 (
-	default  => sub{return as_boxed},
+	default  => sub{return as_internal_boxed},
 	is       => 'rw',
 	isa      => Int,
 	required => 0,
@@ -288,21 +289,25 @@ sub render
 
 	my($output);
 
-	if ($self -> style == as_boxed)
+	if ($self -> style == as_internal_boxed)
 	{
-		$output = $self -> render_as_boxed;
+		$output = $self -> render_as_internal_boxed;
 	}
-	elsif ($self -> style == as_csv)
+	elsif ($self -> style == as_csv_text)
 	{
-		$output = $self -> render_as_csv;
+		$output = $self -> render_as_csv_text;
 	}
-	elsif ($self -> style == as_github)
+	elsif ($self -> style == as_internal_github)
 	{
-		$output = $self -> render_as_github;
+		$output = $self -> render_as_internal_github;
 	}
-	elsif ($self -> style == as_html)
+	elsif ($self -> style == as_internal_html)
 	{
-		$output = $self -> render_as_html;
+		$output = $self -> render_as_internal_html;
+	}
+	elsif ($self -> style == as_html_table)
+	{
+		$output = $self -> render_as_html_table;
 	}
 	else
 	{
@@ -315,7 +320,7 @@ sub render
 
 # ------------------------------------------------
 
-sub render_as_boxed
+sub render_as_internal_boxed
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -355,11 +360,11 @@ sub render_as_boxed
 
 	return [@output];
 
-} # End of render_as_boxed.
+} # End of render_as_internal_boxed.
 
 # ------------------------------------------------
 
-sub render_as_csv
+sub render_as_csv_text
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -398,11 +403,11 @@ sub render_as_csv
 
 	return [@output];
 
-} # End of render_as_csv.
+} # End of render_as_csv_text.
 
 # ------------------------------------------------
 
-sub render_as_github
+sub render_as_internal_github
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -420,11 +425,11 @@ sub render_as_github
 
 	return [@output];
 
-} # End of render_as_github.
+} # End of render_as_internal_github.
 
 # ------------------------------------------------
 
-sub render_as_html
+sub render_as_internal_html
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -436,7 +441,7 @@ sub render_as_html
 	# What if there are no headers!
 
 	my($table)         = '';
-	my($table_options) = ${$self -> pass_thru}{as_html}{table} || {};
+	my($table_options) = ${$self -> pass_thru}{as_internal_html}{table} || {};
 	my(@table_keys)    = sort keys %$table_options;
 
 	if (scalar @table_keys)
@@ -469,7 +474,24 @@ sub render_as_html
 
 	return [@output];
 
-} # End of render_as_html.
+} # End of render_as_internal_html.
+
+# ------------------------------------------------
+
+sub render_as_html_table
+{
+	my($self)    = @_;
+	my($headers) = $self -> headers;
+	my($data)    = $self -> data;
+	my($footers) = $self -> footers;
+
+	$self -> gather_statistics($headers, $data, $footers);
+
+	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{as_html_table} }, -data => $data);
+
+	return [$html -> getTable];
+
+} # End of render_as_html_table.
 
 # ------------------------------------------------
 
@@ -494,7 +516,7 @@ This is scripts/synopsis.pl:
 
 	# -----------
 
-	my($table) = Text::Table::Manifold -> new;
+	my($table) = Text::Table::Manifold -> new(alignment => justify_center);
 
 	$table -> headers(['Name', 'Type', 'Null', 'Key', 'Auto increment']);
 	$table -> data(
@@ -503,45 +525,118 @@ This is scripts/synopsis.pl:
 		['description', 'varchar(255)', 'not null', '', ''],
 		['name', 'varchar(255)', 'not null', '', ''],
 		['upper_name', 'varchar(255)', 'not null', '', ''],
-		[undef, '', '', '', ''],
+		[undef, '', '0', 'http://savage.net.au/', '<tr><td>undef</td></tr>'],
 	]);
-	$table -> alignment(justify_center);
+
+	# Save the data, since render() may update it.
+
+	my(@data) = @{$table -> data};
+
 	$table -> empty(empty_as_minus);
 	$table -> undef(undef_as_text);
 	$table -> padding(1);
-	$table -> style(as_boxed);
+	$table -> style(as_internal_boxed);
 
-	print "Style: as_boxed: \n";
+	print "Style: as_internal_boxed: \n";
 	print join("\n", @{$table -> render}), "\n";
 	print "\n";
 
-	$table -> style(as_github);
+	# Restore the saved data.
 
-	print "Style: as_github: \n";
+	$table -> data([@data]);
+	$table -> pass_thru({as_csv_text => {always_quote => 1} });
+	$table -> style(as_csv_text);
+
+	print "Style: as_csv: \n";
 	print join("\n", @{$table -> render}), "\n";
+	print "\n";
+
+	# Restore the saved data.
+
+	$table -> data([@data]);
+	$table -> style(as_internal_github);
+
+	print "Style: as_internal_github: \n";
+	print join("\n", @{$table -> render}), "\n";
+	print "\n";
+
+	# Restore the saved data.
+
+	$table -> data([@data]);
+	$table -> escape(escape_html);
+	$table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
+	$table -> pass_thru({as_internal_html => {table => {align => 'center', border => 1} } });
+
+	print "Style: as_internal_html: \n";
+	print join("\n", @{$table -> render(style => as_internal_html)}), "\n";
+	print "\n";
+
+	# Restore the saved data.
+
+	$table -> data([@data]);
+	$table -> escape(escape_html);
+	$table -> pass_thru({as_html_table => {-style => 'color: blue'} });
+
+	print "Style: as_html_table: \n";
+	print join("\n", @{$table -> render(style => as_html_table)}), "\n";
 	print "\n";
 
 This is the output of synopsis.pl:
 
-	Style: as_boxed:
-	+-------------+--------------+----------+-------------+----------------+
-	|    Name     |     Type     |   Null   |     Key     | Auto increment |
-	+-------------+--------------+----------+-------------+----------------+
-	|     id      |   int(11)    | not null | primary key | auto_increment |
-	| description | varchar(255) | not null |      -      |       -        |
-	|    name     | varchar(255) | not null |      -      |       -        |
-	| upper_name  | varchar(255) | not null |      -      |       -        |
-	|    undef    |      -       |    -     |      -      |       -        |
-	+-------------+--------------+----------+-------------+----------------+
+	Style: as_internal_boxed:
+	+-------------+--------------+----------+-----------------------+-------------------------+
+	|    Name     |     Type     |   Null   |          Key          |     Auto increment      |
+	+-------------+--------------+----------+-----------------------+-------------------------+
+	|     id      |   int(11)    | not null |      primary key      |     auto_increment      |
+	| description | varchar(255) | not null |           -           |            -            |
+	|    name     | varchar(255) | not null |           -           |            -            |
+	| upper_name  | varchar(255) | not null |           -           |            -            |
+	|    undef    |      -       |          | http://savage.net.au/ | <tr><td>undef</td></tr> |
+	+-------------+--------------+----------+-----------------------+-------------------------+
 
-	Style: as_github:
+	Style: as_csv:
+	Name,Type,Null,Key,"Auto increment"
+	id,int(11),"not null","primary key",auto_increment
+	description,varchar(255),"not null",-,-
+	name,varchar(255),"not null",-,-
+	upper_name,varchar(255),"not null",-,-
+	undef,-,0,http://savage.net.au/,<tr><td>undef</td></tr>
+
+	Style: as_internal_github:
 	Name|Type|Null|Key|Auto increment
-	-----------|------------|--------|-----------|--------------
+	-----------|------------|--------|---------------------|-----------------------
 	id|int(11)|not null|primary key|auto_increment
 	description|varchar(255)|not null|-|-
 	name|varchar(255)|not null|-|-
 	upper_name|varchar(255)|not null|-|-
-	undef|-|-|-|-
+	undef|-|0|http://savage.net.au/|<tr><td>undef</td></tr>
+
+	Style: as_internal_html:
+	<table align = "center" border = "1">
+	<thead>
+	<th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
+	</thead>
+	<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
+	<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+	<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+	<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+	<tr><td>undef</td><td>-</td><td>0</td><td>http://savage.net.au/</td><td>&lt;tr&gt;&lt;td&gt;undef&lt;/td&gt;&lt;/tr&gt;</td></tr>
+	<tfoot>
+	<th>One</th><th>Two</th><th>Three</th><th>Four</th><th>Five</th>
+	<tfoot>
+	</table>
+
+	Style: as_html_table:
+
+	<table style="color: blue">
+	<tbody>
+	<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
+	<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+	<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+	<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+	<tr><td>undef</td><td>-</td><td>0</td><td>http://savage.net.au/</td><td>&amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;undef&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;</td></tr>
+	</tbody>
+	</table>
 
 =head1 Description
 
@@ -549,22 +644,37 @@ Renders your data as tables of various types, using options to the L</style([$st
 
 =over 4
 
-=item o as_boxed
+=item o as_internal_boxed
 
 All headers and table data are surrounded by ASCII characters.
 
-=item o as_csv
+The rendering is done internally.
 
-Pass the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for the
-C<Text::CSV> object.
+=item o as_csv_text
 
-=item o as_github
+Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
+the C<Text::CSV> object.
+
+=item o as_internal_github
 
 As github-flavoured markdown.
 
-=item o as_html
+The rendering is done internally.
+
+=item o as_internal_html
 
 As a HTML table. You can use the L</pass_thru([$hashref])> method to set options for the HTML table.
+
+The rendering is done internally.
+
+=item o as_html_table
+
+Passes the data to L<HTML::Table>. You can use the L</pass_thru([$hashref])> method to set options
+for the C<HTML::Table> object.
+
+Warning: You must use C<Text::Table::Manifold>'s data() method, or the same-named parameter to new(),
+and not the C<-data> option to C<HTML::Table>. This is because my module processes the data before
+calling the C<HTML::Table>'s new() method.
 
 =back
 
@@ -684,7 +794,7 @@ A value for this parameter is optional.
 
 See the L</FAQ> for details.
 
-Default: as_boxed.
+Default: as_internal_boxed.
 
 =item o undef => An imported constant
 
@@ -836,7 +946,7 @@ Then you can use them in the constructor:
 
 And/or you can use them in method calls:
 
-	$table -> style(as_boxed);
+	$table -> style(as_internal_boxed);
 
 See scripts/synopsis.pl for various use cases.
 
@@ -948,15 +1058,25 @@ The C<style> option must be one of the following:
 
 =over 4
 
-=item o as_boxed  => 0
+=item o as_internal_boxed  => 0
 
-=item o as_csv    => 1
+Render internally.
 
-C<Text::CSV> is loaded at runtime if needed.
+=item o as_csv_text        => 1
 
-=item o as_github => 2
+L<Text::CSV> is loaded at runtime if this option is used.
 
-=item o as_html   => 3
+=item o as_internal_github => 2
+
+Render internally.
+
+=item o as_internal_html   => 3
+
+Render internally.
+
+=item o as_html_table      => 4
+
+L<HTML::Table> is loaded at runtime if this option is used.
 
 =back
 
@@ -966,13 +1086,13 @@ It takes these (key => value) pairs:
 
 =over 4
 
-=item o as_csv => {...}
+=item o as_csv_text => {...}
 
 Pass these parameters to L<Text::CSV>'s new() method.
 
-=item o as_html => {table => {...} }
+=item o as_internal_html => {table => {...} }
 
-Pass these parameters to the C<table> tag output by the <as_html> parameter to L</style([$style])>.
+Pass these parameters to the C<table> tag.
 
 =back
 

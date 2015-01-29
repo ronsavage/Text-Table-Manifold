@@ -1,4 +1,4 @@
-Style: as_boxed: 
+Style: as_internal_boxed: 
 +-------------+--------------+----------+-----------------------+-------------------------+
 |    Name     |     Type     |   Null   |          Key          |     Auto increment      |
 +-------------+--------------+----------+-----------------------+-------------------------+
@@ -10,14 +10,14 @@ Style: as_boxed:
 +-------------+--------------+----------+-----------------------+-------------------------+
 
 Style: as_csv: 
-"Name","Type","Null","Key","Auto increment"
-"id","int(11)","not null","primary key","auto_increment"
-"description","varchar(255)","not null","-","-"
-"name","varchar(255)","not null","-","-"
-"upper_name","varchar(255)","not null","-","-"
-"undef","-","0","http://savage.net.au/","<tr><td>undef</td></tr>"
+Name,Type,Null,Key,"Auto increment"
+id,int(11),"not null","primary key",auto_increment
+description,varchar(255),"not null",-,-
+name,varchar(255),"not null",-,-
+upper_name,varchar(255),"not null",-,-
+undef,-,0,http://savage.net.au/,<tr><td>undef</td></tr>
 
-Style: as_github: 
+Style: as_internal_github: 
 Name|Type|Null|Key|Auto increment
 -----------|------------|--------|---------------------|-----------------------
 id|int(11)|not null|primary key|auto_increment
@@ -26,7 +26,7 @@ name|varchar(255)|not null|-|-
 upper_name|varchar(255)|not null|-|-
 undef|-|0|http://savage.net.au/|<tr><td>undef</td></tr>
 
-Style: as_html: 
+Style: as_internal_html: 
 <table align = "center" border = "1">
 <thead>
 <th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
@@ -40,4 +40,17 @@ Style: as_html:
 <th>One</th><th>Two</th><th>Three</th><th>Four</th><th>Five</th>
 <tfoot>
 </table>
+
+Style: as_html_table: 
+
+<table style="color: blue">
+<tbody>
+<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
+<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
+<tr><td>undef</td><td>-</td><td>0</td><td>http://savage.net.au/</td><td>&amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;undef&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;</td></tr>
+</tbody>
+</table>
+
 
