@@ -1,33 +1,33 @@
 Style: as_boxed: 
-+-------------+--------------+----------+-------------+----------------+
-|    Name     |     Type     |   Null   |     Key     | Auto increment |
-+-------------+--------------+----------+-------------+----------------+
-|     id      |   int(11)    | not null | primary key | auto_increment |
-| description | varchar(255) | not null |      -      |       -        |
-|    name     | varchar(255) | not null |      -      |       -        |
-| upper_name  | varchar(255) | not null |      -      |       -        |
-|    undef    |      -       |    -     |      -      |       -        |
-+-------------+--------------+----------+-------------+----------------+
++-------------+--------------+----------+-----------------------+-------------------------+
+|    Name     |     Type     |   Null   |          Key          |     Auto increment      |
++-------------+--------------+----------+-----------------------+-------------------------+
+|     id      |   int(11)    | not null |      primary key      |     auto_increment      |
+| description | varchar(255) | not null |           -           |            -            |
+|    name     | varchar(255) | not null |           -           |            -            |
+| upper_name  | varchar(255) | not null |           -           |            -            |
+|    undef    |      -       |          | http://savage.net.au/ | <tr><td>undef</td></tr> |
++-------------+--------------+----------+-----------------------+-------------------------+
 
 Style: as_github: 
 Name|Type|Null|Key|Auto increment
------------|------------|--------|-----------|--------------
+-----------|------------|--------|---------------------|-----------------------
 id|int(11)|not null|primary key|auto_increment
 description|varchar(255)|not null|-|-
 name|varchar(255)|not null|-|-
 upper_name|varchar(255)|not null|-|-
-undef|-|-|-|-
+undef|-|0|http://savage.net.au/|<tr><td>undef</td></tr>
 
 Style: as_html: 
 <table border = "1" align = "center">
 <thead>
 <th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
 </thead>
-<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
-<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>undef</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>id</td><td>int%2811%29</td><td>not%20null</td><td>primary%20key</td><td>auto_increment</td></tr>
+<tr><td>description</td><td>varchar%28255%29</td><td>not%20null</td><td>-</td><td>-</td></tr>
+<tr><td>name</td><td>varchar%28255%29</td><td>not%20null</td><td>-</td><td>-</td></tr>
+<tr><td>upper_name</td><td>varchar%28255%29</td><td>not%20null</td><td>-</td><td>-</td></tr>
+<tr><td>undef</td><td>-</td><td>0</td><td>http%3A%2F%2Fsavage.net.au%2F</td><td>%26lt%3Btr%26gt%3B%26lt%3Btd%26gt%3Bundef%26lt%3B%2Ftd%26gt%3B%26lt%3B%2Ftr%26gt%3B</td></tr>
 <tfoot>
 <th>One</th><th>Two</th><th>Three</th><th>Four</th><th>Five</th>
 <tfoot>

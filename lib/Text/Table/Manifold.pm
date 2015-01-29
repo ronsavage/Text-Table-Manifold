@@ -10,15 +10,21 @@ use Const::Exporter constants =>
 	# Values of alignment().
 
 	justify_left   => 0,
-	justify_center => 1,
+	justify_center => 1, # The default.
 	justify_right  => 2,
 
 	# Values for empty(), i.e. empty string handling.
 
-	empty_as_empty => 0, # Do nothing.
+	empty_as_empty => 0, # Do nothing. The default.
 	empty_as_minus => 1,
 	empty_as_text  => 2, # 'empty'.
 	empty_as_undef => 3,
+
+	# Values for escape().
+
+	escape_nothing => 0, # The default.
+	escape_html    => 1,
+	escape_uri     => 2,
 
 	# Values for style().
 
@@ -31,8 +37,10 @@ use Const::Exporter constants =>
 	undef_as_empty => 0,
 	undef_as_minus => 1,
 	undef_as_text  => 2, # 'undef'.
-	undef_as_undef => 3, # Do nothing.
+	undef_as_undef => 3, # Do nothing. The default.
 ];
+
+use HTML::Entities::Interpolate; # This module can't be loaded at runtime.
 
 use List::AllUtils 'max';
 
@@ -41,6 +49,8 @@ use Moo;
 use Types::Standard qw/Any ArrayRef HashRef Int Str/;
 
 use Unicode::GCString;
+
+use URI::Escape;
 
 has alignment =>
 (
@@ -66,11 +76,11 @@ has empty =>
 	required => 0,
 );
 
-has escapes =>
+has escape =>
 (
-	default  => sub{return []},
+	default  => sub{return escape_nothing},
 	is       => 'rw',
-	isa      => ArrayRef,
+	isa      => Int,
 	required => 0,
 );
 
@@ -188,8 +198,9 @@ sub _clean_data
 		$$footers[$column] = defined($$footers[$column]) ? $$footers[$column] : '-';
 	}
 
-	my($empty) = $self -> empty;
-	my($undef) = $self -> undef;
+	my($empty)  = $self -> empty;
+	my($escape) = $self -> escape;
+	my($undef)  = $self -> undef;
 
 	my($s);
 
@@ -216,6 +227,8 @@ sub _clean_data
 									? 'undef'
 									: $s; # No need to check for undef_as_undef here!
 
+			$s                    = $Entitize{$s}  if ($escape & escape_html);
+			$s                    = uri_escape($s) if ($escape & escape_uri);
 			$$data[$row][$column] = $s;
 		}
 	}
@@ -586,6 +599,14 @@ See the L</FAQ> for details.
 
 Default: empty_as_empty. I.e. do not transform.
 
+=item o escape => An imported constant
+
+A value for this parameter is optional.
+
+See the L</FAQ> for details.
+
+Default: escape_nothing. I.e. do not transform.
+
 =item o padding => $integer
 
 A value for this parameter is optional.
@@ -662,6 +683,17 @@ See the L</FAQ#What are the constants for handling cell values which are empty s
 for legal values for $empty.
 
 See also L</undef([$undef])>.
+
+=head2 escape([$escape])
+
+Here, the [] indicate an optional parameter.
+
+Returns the option specifying how HTML and URIs are being dealt with.
+
+$escape controls how either HTML or URIs are rendered.
+
+See the L</FAQ#What are the constants for escaping HTML and URIs?>
+for legal values for $escape.
 
 =head2 headers([$arrayref])
 
@@ -771,7 +803,7 @@ The C<style> option must be one of the following:
 
 =head2 What are the constants for alignment?
 
-The C<alignment> option must be one of the following:
+The parameter to L</alignment([$alignment])> must be one of the following:
 
 =over 4
 
@@ -787,7 +819,7 @@ Alignment applies equally to every cell in the table.
 
 =head2 What are the constants for handling cell values which are empty strings?
 
-The C<handle_empty> option must be one of the following:
+The parameter to L</empty([$empty])> must be one of the following:
 
 =over 4
 
@@ -815,7 +847,7 @@ Warning: This updates the original data!
 
 =head2 What are the constants for handling cell values which are undef?
 
-The C<handle_undef> option must be one of the following:
+The parameter to L</undef([$undef])> must be one of the following:
 
 =over 4
 
@@ -840,6 +872,30 @@ This is the default.
 =back
 
 Warning: This updates the original data!
+
+=head2 What are the constants for escaping HTML and URIs?
+
+The parameter to L</escape([$escape])> must be one of the following:
+
+=over 4
+
+=item o escape_nothing => 0
+
+This is the default.
+
+=item o escape_html    => 1
+
+Use L<HTML::Entities::Interpolate> to escape HTML.
+
+=item o escape_uri     => 2
+
+Use L<URI::Escape>'s uri_escape() method to escape URIs.
+
+=back
+
+Warning: Do not use C<escape_html> and C<escape_uri> simultaneously, since e.g. the '<' which
+has been escaped first by <HTML::Entities::Interpolate> into '&lt;' will then have its '&' escaped
+by C<URI::Escape> into '%26'. You probably don't want that, but if you do, that's what will happen.
 
 =head2 How do I run author tests?
 
