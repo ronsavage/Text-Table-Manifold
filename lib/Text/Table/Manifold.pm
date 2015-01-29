@@ -26,6 +26,11 @@ use Const::Exporter constants =>
 	escape_html    => 1,
 	escape_uri     => 2,
 
+	# Values for extend().
+
+	extend_with_empty => 0, # The default.
+	extend_with_undef => 1,
+
 	# Values for style().
 
 	as_internal_boxed  => 0, # The default.
@@ -81,6 +86,14 @@ has empty =>
 has escape =>
 (
 	default  => sub{return escape_nothing},
+	is       => 'rw',
+	isa      => Int,
+	required => 0,
+);
+
+has extend =>
+(
+	default  => sub{return extend_with_empty},
 	is       => 'rw',
 	isa      => Int,
 	required => 0,
@@ -245,16 +258,8 @@ sub gather_statistics
 {
 	my($self, $headers, $data, $footers) = @_;
 
+	$self -> _rectify_data($headers, $data, $footers);
 	$self -> _clean_data($headers, $data, $footers);
-
-	my($column_count);
-
-	for my $row (0 .. $#$data)
-	{
-		$column_count = $#{$$data[$row]};
-
-		die "Error: # of data columns (@{[$column_count]}) in row @{[$row + 1]} != # of header columns (@{[$#$headers]})\n" if ($column_count != $#$headers);
-	}
 
 	my(@column);
 	my($header_width);
@@ -275,6 +280,22 @@ sub gather_statistics
 	$self -> widths(\@max_widths);
 
 } # End of gather_statistics.
+
+# ------------------------------------------------
+
+sub _rectify_data
+{
+	my($self, $headers, $data, $footers) = @_;
+	my($max_length) = 0;
+
+	for my $row (0 .. $#$data)
+	{
+		$max_length = $#{$$data[$row]} if ($#{$$data[$row]} > $max_length);
+	}
+
+	$max_length = max $#$headers, $#$footers, $max_length;
+
+} # End of _rectify_data.
 
 # ------------------------------------------------
 
@@ -729,6 +750,8 @@ C<new()> is called as C<< my($parser) = Text::Table::Manifold -> new(k1 => v1, k
 
 It returns a new object of type C<Text::Table::Manifold>.
 
+Details of all parameters are explained in the L</FAQ>.
+
 Key-value pairs accepted in the parameter list (see corresponding methods for details
 [e.g. L</data([$arrayref])>]):
 
@@ -740,17 +763,14 @@ A value for this parameter is optional.
 
 Alignment applies equally to every cell in the table.
 
-See the L</FAQ> for details.
-
 Default: justify_center.
 
 =item o data => $arrayref of arrayrefs
 
 An arrayref of arrayrefs, each one a line of data.
 
-The # of elements in each row must match the # of elements in the C<headers> arrayref (if any).
-
-See the L</FAQ> for details.
+The # of elements in each header/data/footer row does not have to be the same. See the C<extend>
+parameter for more.
 
 A value for this parameter is optional.
 
@@ -760,7 +780,10 @@ Default: [].
 
 A value for this parameter is optional.
 
-See the L</FAQ> for details.
+This specifies how to transform cell values which are the empty string. See also the C<undef>
+parameter.
+
+The C<empty> parameter is activated after the C<extend> parameter has been applied.
 
 Default: empty_as_empty. I.e. do not transform.
 
@@ -768,15 +791,45 @@ Default: empty_as_empty. I.e. do not transform.
 
 A value for this parameter is optional.
 
-See the L</FAQ> for details.
-
 Default: escape_nothing. I.e. do not transform.
+
+=item o extend => An imported constant
+
+A value for this parameter is optional.
+
+The 2 constants available allow you to specify how short rows are extended. Then, after extension,
+the parameters C<empty> or C<undef> are applied.
+
+Default: extend_with_empty. I.e. extend short rows with the empty string.
+
+=item o footers => $arrayref
+
+A value for this parameter is optional.
+
+These are the column footers. See also the C<headers> option.
+
+The # of elements in each header/data/footer row does not have to be the same. See the C<extend>
+parameter for more.
+
+Default: [].
+
+=item o headers => $arrayref
+
+A value for this parameter is optional.
+
+These are the column headers. See also the C<footers> option.
+
+The # of elements in each header/data/footer row does not have to be the same. See the C<extend>
+parameter for more.
+
+Default: [].
 
 =item o padding => $integer
 
 A value for this parameter is optional.
 
-See the L</FAQ> for details.
+This integer is the # of spaces added to each side of the cell value, after the C<alignment>
+parameter has been applied.
 
 Default: 0.
 
@@ -784,7 +837,7 @@ Default: 0.
 
 A hashref of values to pass thru to another object.
 
-See the L</FAQ> for details.
+The keys in this $hashref control what parameters are passed to rendering routines.
 
 Default: {}.
 
@@ -792,7 +845,7 @@ Default: {}.
 
 A value for this parameter is optional.
 
-See the L</FAQ> for details.
+This specifies which type of rendering to perform.
 
 Default: as_internal_boxed.
 
@@ -800,9 +853,11 @@ Default: as_internal_boxed.
 
 A value for this parameter is optional.
 
-See the L</FAQ> for details.
+This specifies how to transform cell values which are undef. See also the C<empty> parameter.
 
-Default: undef_as_undef.
+The C<undef> parameter is activated after the C<extend> parameter has been applied.
+
+Default: undef_as_undef. I.e. do not transform.
 
 =back
 
@@ -836,6 +891,8 @@ Use Perl's C<undef> or '' (the empty string) for missing values.
 
 See L</empty([$empty])> and L</undef([$undef])> for how '' and C<undef> are handled.
 
+See L</extend([$extend])> for how to extend a short data row.
+
 =head2 empty([$empty])
 
 Here, the [] indicate an optional parameter.
@@ -860,6 +917,27 @@ $escape controls how either HTML or URIs are rendered.
 See the L</FAQ#What are the constants for escaping HTML and URIs?>
 for legal values for $escape.
 
+=head2 extend([$extend])
+
+Here, the [] indicate an optional parameter.
+
+Returns the option specifying how short rows are extended.
+
+If the # of elements in any header/data/footer row is shorter than the longest row, $extend
+specifies how to extend those short rows.
+
+See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
+
+=head2 footers([$arrayref])
+
+Here, the [] indicate an optional parameter.
+
+Returns the footers as an arrayref of strings.
+
+$arrayref, if provided, must be an arrayref of strings.
+
+See L</extend([$extend])> for how to extend a short footer row.
+
 =head2 headers([$arrayref])
 
 Here, the [] indicate an optional parameter.
@@ -868,8 +946,7 @@ Returns the headers as an arrayref of strings.
 
 $arrayref, if provided, must be an arrayref of strings.
 
-The # of elements in $arrayref does not have to match the # of elements in each row of the data,
-but really, it should.
+See L</extend([$extend])> for how to extend a short header row.
 
 =head2 new([%hash])
 
@@ -1052,6 +1129,21 @@ by C<URI::Escape> into '%26'. You probably don't want that, but if you do, that'
 
 Warning: This updates the original data!
 
+=head2 What are the constants for extending short rows
+
+The C<extend> option must be one of the following:
+
+=over 4
+
+=item o extend_with_empty
+
+=item o extend_with_undef
+
+=back
+
+Keep in mind that after short headers/data/footers are extended, the logic activated by
+L</empty([$empty])> and L</undef([$undef])> is applied.
+
 =head2 What are the constants for styling?
 
 The C<style> option must be one of the following:
@@ -1143,6 +1235,10 @@ See L<Data::Table> and L<HTML::Table>.
 =item o Color support
 
 See L<Text::ANSITable>.
+
+=item o Subtotal support
+
+Maybe one day.
 
 =back
 
