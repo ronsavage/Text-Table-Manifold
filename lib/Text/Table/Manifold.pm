@@ -49,8 +49,6 @@ use Module::Runtime 'use_module';
 
 use Moo;
 
-use Text::CSV;
-
 use Types::Standard qw/Any ArrayRef HashRef Int Str/;
 
 use Unicode::GCString;
@@ -953,6 +951,8 @@ The C<style> option must be one of the following:
 =item o as_boxed  => 0
 
 =item o as_csv    => 1
+
+C<Text::CSV> is loaded at runtime if needed.
 
 =item o as_github => 2
 
