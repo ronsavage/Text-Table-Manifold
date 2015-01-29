@@ -560,6 +560,8 @@ Key-value pairs accepted in the parameter list (see corresponding methods for de
 
 A value for this parameter is optional.
 
+Alignment applies equally to every cell in the table.
+
 See the L</FAQ> for details.
 
 Default: justify_center.
@@ -627,6 +629,8 @@ Here, the [] indicate an optional parameter.
 Returns the alignment as a constant (actually an integer).
 
 $alignment might force spaces to be added to one or both sides of a cell value.
+
+Alignment applies equally to every cell in the table.
 
 This happens before any spaces specified by L</padding([$integer])> are added.
 
@@ -778,6 +782,8 @@ The C<alignment> option must be one of the following:
 =item o justify_right => 2
 
 =back
+
+Alignment applies equally to every cell in the table.
 
 =head2 What are the constants for handling cell values which are empty strings?
 

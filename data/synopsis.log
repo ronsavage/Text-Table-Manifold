@@ -19,7 +19,7 @@ upper_name|varchar(255)|not null|-|-
 undef|-|-|-|-
 
 Style: as_html: 
-<table align = "center" border = "1">
+<table border = "1" align = "center">
 <thead>
 <th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
 </thead>
