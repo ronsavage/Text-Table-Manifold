@@ -35,8 +35,7 @@ print "\n";
 
 $table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
 $table -> pass_thru({table => {align => 'center', border => 1} });
-$table -> style(as_html);
 
 print "Style: as_html: \n";
-print join("\n", @{$table -> render}), "\n";
+print join("\n", @{$table -> render(style => as_html)}), "\n";
 print "\n";

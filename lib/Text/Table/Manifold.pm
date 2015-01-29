@@ -130,7 +130,7 @@ has widths =>
 	required => 0,
 );
 
-our $VERSION = '1.00';
+our $VERSION = '0.90';
 
 # ------------------------------------------------
 
@@ -263,7 +263,12 @@ sub gather_statistics
 
 sub render
 {
-	my($self) = @_;
+	my($self, %hash) = @_;
+
+	for my $key (keys %hash)
+	{
+		$self -> $key($hash{$key});
+	}
 
 	my($output);
 
@@ -369,7 +374,7 @@ sub render_as_html
 
 	my($table)         = '';
 	my($table_options) = ${$self -> pass_thru}{table} || {};
-	my(@table_keys)    = keys %$table_options;
+	my(@table_keys)    = sort keys %$table_options;
 
 	if (scalar @table_keys)
 	{
@@ -669,6 +674,8 @@ but really, it should.
 
 The constructor. See L</Constructor and Initialization> for details of the parameter list.
 
+Note: L</render([%hash])> supports the same options as C<new()>.
+
 =head2 padding([$integer])
 
 Here, the [] indicate an optional parameter.
@@ -688,7 +695,9 @@ The structure of this hashref is detailed in the L</FAQ>.
 See scripts/synopsis.pl for sample code where it is used to add attributes to the C<table> tag in
 HTML output.
 
-=head2 render()
+=head2 render([%hash])
+
+Here, the [] indicate an optional parameter.
 
 Returns an arrayref, where each element is 1 line of the output table. These lines do not have "\n"
 or any other line terminator (e.g. <br/>) added by this module.
@@ -696,6 +705,8 @@ or any other line terminator (e.g. <br/>) added by this module.
 It's up to you how to handle the output. The simplest thing is to just do:
 
 	print join("\n", @{$table -> render}), "\n";
+
+Note: C<render()> supports the same options as L</new([%hash])>.
 
 =head2 style([$style])
 
@@ -834,9 +845,12 @@ This runs both standard and author tests:
 
 =over 4
 
-=item o Parameters to render()
+=item o Fancy alignment of real numbers
 
-It would be nice if L</reander()> accepted the same parameters are L</new([%hash])>.
+It makes sense to right-justify integers, but in the rest of the table you probably want to
+left-justify strings.
+
+Then, vertically aligning decimal points (whatever they are in your locale) is another complexity.
 
 =item o Embedded newlines
 
@@ -849,9 +863,9 @@ For Unicode, this is complex. See L<http://www.unicode.org/versions/Unicode7.0.0
 especially p 192, for 'Line break' controls. Also, the Unicode line breaking algorithm is documented
 in L<http://www.unicode.org/reports/tr14/tr14-33.html>.
 
-Any information you have on Perl classes which help with this will be gratefully received.
+Perl modules relevant to this are listed under L</See also#Line Breaking>.
 
-=item o Next tables
+=item o Nested tables
 
 This really requires the implementation of embedded newline analysis, as per the previous point.
 
@@ -859,6 +873,14 @@ This really requires the implementation of embedded newline analysis, as per the
 
 Initially, L<HTML::Table>, L<PDF::Table> and L<Text::CSV> will be supported. The problem is the
 mixture of options required to drive other classes.
+
+=item o Sorting the rows, or individual columns
+
+See L<Data::Table> and L<HTML::Table>.
+
+=item o Color support
+
+See L<Text::ANSITable>.
 
 =back
 
@@ -876,7 +898,7 @@ L<Data::Table>
 
 L<Data::Tabulate>
 
-L<Gapp>
+L<Gapp::TableMap>
 
 L<HTML::Table>
 
@@ -916,13 +938,15 @@ L<Text::TabularDisplay>
 
 L<Text::Tabulate>
 
+L<Text::UnicodeBox>
+
 L<Text::UnicodeBox::Table>
 
 L<Text::UnicodeTable::Simple>
 
 L<Tie::Array::CSV>
 
-=head2 Line Breaking, Wrapping, etc
+=head2 Line Breaking
 
 L<Text::Format>
 
