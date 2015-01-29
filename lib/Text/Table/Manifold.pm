@@ -29,8 +29,9 @@ use Const::Exporter constants =>
 	# Values for style().
 
 	as_boxed       => 0, # The default.
-	as_github      => 1,
-	as_html        => 2,
+	as_csv         => 1,
+	as_github      => 2,
+	as_html        => 3,
 
 	# Values for undef(), i.e. undef handling.
 
@@ -44,13 +45,15 @@ use HTML::Entities::Interpolate; # This module can't be loaded at runtime.
 
 use List::AllUtils 'max';
 
+use Module::Runtime 'use_module';
+
 use Moo;
+
+use Text::CSV;
 
 use Types::Standard qw/Any ArrayRef HashRef Int Str/;
 
 use Unicode::GCString;
-
-use URI::Escape;
 
 has alignment =>
 (
@@ -202,6 +205,8 @@ sub _clean_data
 	my($escape) = $self -> escape;
 	my($undef)  = $self -> undef;
 
+	use_module('URI::Escape') if ($escape & escape_uri);
+
 	my($s);
 
 	for my $row (0 .. $#$data)
@@ -228,7 +233,7 @@ sub _clean_data
 									: $s; # No need to check for undef_as_undef here!
 
 			$s                    = $Entitize{$s}  if ($escape & escape_html);
-			$s                    = uri_escape($s) if ($escape & escape_uri);
+			$s                    = URI::Escape::uri_escape($s) if ($escape & escape_uri);
 			$$data[$row][$column] = $s;
 		}
 	}
@@ -288,6 +293,10 @@ sub render
 	if ($self -> style == as_boxed)
 	{
 		$output = $self -> render_as_boxed;
+	}
+	elsif ($self -> style == as_csv)
+	{
+		$output = $self -> render_as_csv;
 	}
 	elsif ($self -> style == as_github)
 	{
@@ -352,6 +361,49 @@ sub render_as_boxed
 
 # ------------------------------------------------
 
+sub render_as_csv
+{
+	my($self)    = @_;
+	my($headers) = $self -> headers;
+	my($data)    = $self -> data;
+	my($footers) = $self -> footers;
+
+	$self -> gather_statistics($headers, $data, $footers);
+
+	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{as_csv} || {});
+	my($status) = $csv -> combine(@$headers);
+
+	my(@output);
+
+	if ($status)
+	{
+		push @output, $csv -> string;
+
+		for my $row (0 .. $#$data)
+		{
+			$status = $csv -> combine(@{$$data[$row]});
+
+			if ($status)
+			{
+				push @output, $csv -> string
+			}
+			else
+			{
+				die "Can't combine data:\nLine: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
+			}
+		}
+	}
+	else
+	{
+		die "Can't combine headers:\nHeader: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
+	}
+
+	return [@output];
+
+} # End of render_as_csv.
+
+# ------------------------------------------------
+
 sub render_as_github
 {
 	my($self)    = @_;
@@ -386,7 +438,7 @@ sub render_as_html
 	# What if there are no headers!
 
 	my($table)         = '';
-	my($table_options) = ${$self -> pass_thru}{table} || {};
+	my($table_options) = ${$self -> pass_thru}{as_html}{table} || {};
 	my(@table_keys)    = sort keys %$table_options;
 
 	if (scalar @table_keys)
@@ -495,7 +547,7 @@ This is the output of synopsis.pl:
 
 =head1 Description
 
-Renders your data as tables of various types:
+Renders your data as tables of various types, using options to the L</style([$style]) method:
 
 =over 4
 
@@ -503,13 +555,18 @@ Renders your data as tables of various types:
 
 All headers and table data are surrounded by ASCII characters.
 
+=item o as_csv
+
+Pass the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for the
+C<Text::CSV> object.
+
 =item o as_github
 
 As github-flavoured markdown.
 
 =item o as_html
 
-As a HTML table.
+As a HTML table. You can use the L</pass_thru([$hashref])> method to set options for the HTML table.
 
 =back
 
@@ -787,20 +844,6 @@ See scripts/synopsis.pl for various use cases.
 
 Note how the code uses the names of the constants. The integer values listed below are just FYI.
 
-=head2 What are the constants for styling?
-
-The C<style> option must be one of the following:
-
-=over 4
-
-=item o as_boxed  => 0
-
-=item o as_github => 1
-
-=item o as_html   => 2
-
-=back
-
 =head2 What are the constants for alignment?
 
 The parameter to L</alignment([$alignment])> must be one of the following:
@@ -885,17 +928,53 @@ This is the default.
 
 =item o escape_html    => 1
 
-Use L<HTML::Entities::Interpolate> to escape HTML.
+Use L<HTML::Entities::Interpolate> to escape HTML. C<HTML::Entities::Interpolate> cannot be loaded
+as runtime, and so is always needed.
 
 =item o escape_uri     => 2
 
-Use L<URI::Escape>'s uri_escape() method to escape URIs.
+Use L<URI::Escape>'s uri_escape() method to escape URIs. C<URI::Escape> is loaded at runtime
+if needed.
 
 =back
 
 Warning: Do not use C<escape_html> and C<escape_uri> simultaneously, since e.g. the '<' which
 has been escaped first by <HTML::Entities::Interpolate> into '&lt;' will then have its '&' escaped
 by C<URI::Escape> into '%26'. You probably don't want that, but if you do, that's what will happen.
+
+Warning: This updates the original data!
+
+=head2 What are the constants for styling?
+
+The C<style> option must be one of the following:
+
+=over 4
+
+=item o as_boxed  => 0
+
+=item o as_csv    => 1
+
+=item o as_github => 2
+
+=item o as_html   => 3
+
+=back
+
+=head2 What is the format of the $hashref used in the call to pass_thru()?
+
+It takes these (key => value) pairs:
+
+=over 4
+
+=item o as_csv => {...}
+
+Pass these parameters to L<Text::CSV>'s new() method.
+
+=item o as_html => {table => {...} }
+
+Pass these parameters to the C<table> tag output by the <as_html> parameter to L</style([$style])>.
+
+=back
 
 =head2 How do I run author tests?
 
@@ -913,6 +992,8 @@ It makes sense to right-justify integers, but in the rest of the table you proba
 left-justify strings.
 
 Then, vertically aligning decimal points (whatever they are in your locale) is another complexity.
+
+See L<Text::ASCIITable> and L<Text::Table>.
 
 =item o Embedded newlines
 
@@ -933,8 +1014,7 @@ This really requires the implementation of embedded newline analysis, as per the
 
 =item o Pass-thru class support
 
-Initially, L<HTML::Table>, L<PDF::Table> and L<Text::CSV> will be supported. The problem is the
-mixture of options required to drive other classes.
+The problem is the mixture of options required to drive classes.
 
 =item o Sorting the rows, or individual columns
 
@@ -967,8 +1047,6 @@ L<HTML::Table>
 L<HTML::Tabulate>
 
 L<LaTeX::Table>
-
-L<Text::ASCIITable>
 
 L<PDF::Table>
 
