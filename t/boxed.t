@@ -37,8 +37,8 @@ $table -> data(
 	['upper_name', 'varchar(255)', 'not null', '', ''],
 ]);
 
-run_test($table, as_boxed, '+', '+');
-run_test($table, as_github, 'N', '|');
-run_test($table, as_html, '<', '>');
+run_test($table, as_internal_boxed, '+', '+');
+run_test($table, as_internal_github, 'N', '|');
+run_test($table, as_internal_html, '<', '>');
 
 done_testing;
