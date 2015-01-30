@@ -1,15 +1,15 @@
 Format: format_internal_boxed: 
 +---------------------+--------------+----------------------------------------+
-|         One         |     Two      |                 Three                  |
+|  One                |     Two      |                                 Three  |
 +---------------------+--------------+----------------------------------------+
-|   Reichwaldstraße   |    Böhme     |            ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ             |
-|  Πηληϊάδεω Ἀχιλῆος  |  ΔΔΔΔΔΔΔΔΔΔ  |              A snowman: ☃              |
-|    Two ticks: ✔✔    |    undef     |  <table><tr><td>TBA</td></tr></table>  |
+|  Reichwaldstraße    |    Böhme     |                       ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ  |
+|  Πηληϊάδεω Ἀχιλῆος  |  ΔΔΔΔΔΔΔΔΔΔ  |                          A snowman: ☃  |
+|  Two ticks: ✔✔      |    undef     |  <table><tr><td>TBA</td></tr></table>  |
 +---------------------+--------------+----------------------------------------+
 
 Format: format_internal_github: 
 One|Two|Three
------------------|----------|------------------------------------
+:------------------------------------|:------------------------------------:|----------:
 Reichwaldstraße|Böhme|ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ
 Πηληϊάδεω Ἀχιλῆος|ΔΔΔΔΔΔΔΔΔΔ|A snowman: ☃
 Two ticks: ✔✔|undef|<table><tr><td>TBA</td></tr></table>
@@ -17,13 +17,13 @@ Two ticks: ✔✔|undef|<table><tr><td>TBA</td></tr></table>
 Format: format_internal_html: 
 <table align = "center" border = "1">
 <thead>
-<th>One</th><th>Two</th><th>Three</th><th></th>
+<th>One</th><th>Two</th><th>Three</th>
 </thead>
-<tr><td>Reichwaldstraße</td><td>Böhme</td><td>ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ</td><td>-</td></tr>
-<tr><td>Πηληϊάδεω Ἀχιλῆος</td><td>ΔΔΔΔΔΔΔΔΔΔ</td><td>A snowman: ☃</td><td>-</td></tr>
-<tr><td>Two ticks: ✔✔</td><td>undef</td><td><table><tr><td>TBA</td></tr></table></td><td>-</td></tr>
+<td><span style='text-align:left'>Reichwaldstraße</span></td><td><span style='text-align:center'>Böhme</span></td><td><span style='text-align:right'>ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ</span></td>
+<td><span style='text-align:left'>Πηληϊάδεω Ἀχιλῆος</span></td><td><span style='text-align:center'>ΔΔΔΔΔΔΔΔΔΔ</span></td><td><span style='text-align:right'>A snowman: ☃</span></td>
+<td><span style='text-align:left'>Two ticks: ✔✔</span></td><td><span style='text-align:center'>undef</span></td><td><span style='text-align:right'><table><tr><td>TBA</td></tr></table></span></td>
 <tfoot>
-<th>One</th><th>Two</th><th>Three</th><th>Four</th>
+<th>One</th><th>Two</th><th>Three</th>
 <tfoot>
 </table>
 

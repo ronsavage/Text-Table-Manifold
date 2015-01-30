@@ -7,8 +7,6 @@ use Text::Table::Manifold ':constants';
 
 # -----------
 
-# Set parameters with new().
-
 my($table) = Text::Table::Manifold -> new
 (
 	alignment =>
@@ -31,16 +29,13 @@ $table -> data(
 
 my(@data) = @{$table -> data};
 
-# Set parameters with methods.
+$table -> footers(['One', 'Two', 'Three', 'Four']);
+$table -> escape(escape_html);
+$table -> include(include_headers | include_data | include_footers);
+$table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
 
-$table -> empty(empty_as_minus);
-$table -> format(format_internal_boxed);
-$table -> undef(undef_as_text);
-
-# Set parameters with render().
-
-print "Format: format_internal_boxed: \n";
-print join("\n", @{$table -> render(padding => 1)}), "\n";
+print "Format: as_internal_html: \n";
+print join("\n", @{$table -> render(format => format_internal_html)}), "\n";
 print "\n";
 
 # Note: Restore the saved data.

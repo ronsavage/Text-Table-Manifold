@@ -7,8 +7,6 @@ use Text::Table::Manifold ':constants';
 
 # -----------
 
-# Set parameters with new().
-
 my($table) = Text::Table::Manifold -> new
 (
 	alignment =>
@@ -27,23 +25,19 @@ $table -> data(
 	['https://duckduckgo.com/', 'Earth',     'Mr. S. Engine', ''],
 ]);
 
-# Note: Save the data, since render() may update it.
+# Save the data, since render() may update it.
 
 my(@data) = @{$table -> data};
 
-# Set parameters with methods.
-
-$table -> empty(empty_as_minus);
-$table -> format(format_internal_boxed);
+$table -> empty(empty_as_text);
 $table -> undef(undef_as_text);
+$table -> format(format_internal_github);
 
-# Set parameters with render().
-
-print "Format: format_internal_boxed: \n";
-print join("\n", @{$table -> render(padding => 1)}), "\n";
+print "Format: format_internal_github: \n";
+print join("\n", @{$table -> render}), "\n";
 print "\n";
 
-# Note: Restore the saved data.
+# Restore the saved data.
 
 $table -> data([@data]);
 

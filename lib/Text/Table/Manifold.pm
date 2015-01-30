@@ -153,6 +153,14 @@ has include =>
 	required => 0,
 );
 
+has object =>
+(
+	default  => sub{return ''},
+	is       => 'rw',
+	isa      => Any,
+	required => 0,
+);
+
 has padding =>
 (
 	default  => sub{return 0},
@@ -264,13 +272,25 @@ sub _clean_data
 									? 'undef'
 									: $s; # No need to check for undef_as_undef here!
 
-			$s                    = $Entitize{$s}  if ($escape == escape_html);
-			$s                    = URI::Escape::uri_escape($s) if ($escape == escape_uri);
+			$s                    = $Entitize{$s}  if (defined($s) && ($escape == escape_html) );
+			$s                    = URI::Escape::uri_escape($s) if ($escape == escape_uri); # Undef harmless here.
 			$$data[$row][$column] = $s;
 		}
 	}
 
 } # End of _clean_data.
+
+# ------------------------------------------------
+
+sub format_as_html_table
+{
+	my($self, $alignment, $headers, $data, $footers) = @_;
+
+	$self -> object(use_module('HTML::Table') -> new(%{${$self -> pass_thru}{format_html_table} }, -data => $data) );
+
+	return [$self -> object -> getTable];
+
+} # End of format_as_html_table.
 
 # ------------------------------------------------
 
@@ -342,8 +362,31 @@ sub format_as_internal_boxed
 sub format_as_internal_github
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
+	my(@output) = join('|', @$headers);
+	my($widths) = $self -> widths;
 
-	my(@output) = (join('|', @$headers), join('|', map{'-' x $_} @{$self -> widths}) );
+	my($align);
+	my(@line);
+
+	for my $column (0 .. $#$widths)
+	{
+		$align = $$alignment[$column];
+
+		if ($align == align_left)
+		{
+			push @line, ':' . ('-' x $$widths[$column - 1]);
+		}
+		elsif ($align == align_center)
+		{
+			push @line, ':' . ('-' x $$widths[$column - 2]) . ':';
+		}
+		else
+		{
+			push @line, ('-' x $$widths[$column - 1]) . ':';
+		}
+	}
+
+	push @output, join('|', @line);
 
 	for my $row (0 .. $#$data)
 	{
@@ -378,11 +421,37 @@ sub format_as_internal_html
 		push @output, '</thead>';
 	}
 
+	my(%alignment) =
+	(
+		# Warning: If I use align_left etc here, Perl does not use the integer values!
+
+		0 => "<span style='text-align:left'>",
+		1 => "<span style='text-align:center'>",
+		2 => "<span style='text-align:right'>",
+	);
+
 	if ($include & include_data)
 	{
+		my($align);
+		my(@line);
+		my($value);
+
 		for my $row (0 .. $#$data)
 		{
-			push @output, '<tr><td>' . join('</td><td>', map{defined($_) ? $_ : ''} @{$$data[$row]}) . '</td></tr>';
+			@line = ();
+
+			# Every row will have the same # of columns, so we pick 1.
+
+			for my $column (0 .. $#{$$data[0]})
+			{
+				$align = $$alignment[$column];
+				$value = $$data[$row][$column];
+				$value = defined($value) ? $value : '';
+
+				push @line, "<td>$alignment{$align}$value</span></td>";
+			}
+
+			push @output, join('',  @line);
 		}
 	}
 
@@ -401,48 +470,36 @@ sub format_as_internal_html
 
 # ------------------------------------------------
 
-sub format_as_html_table
-{
-	my($self, $alignment, $headers, $data, $footers) = @_;
-
-	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{format_html_table} }, -data => $data);
-
-	return [$html -> getTable];
-
-} # End of format_as_html_table.
-
-# ------------------------------------------------
-
 sub format_as_text_csv
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 
-	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{format_text_csv} || {});
-	my($status) = $csv -> combine(@$headers);
+	$self -> object(use_module('Text::CSV') -> new(${$self -> pass_thru}{format_text_csv} || {}) );
+	my($status) = $self -> object -> combine(@$headers);
 
 	my(@output);
 
 	if ($status)
 	{
-		push @output, $csv -> string;
+		push @output, $self -> object -> string;
 
 		for my $row (0 .. $#$data)
 		{
-			$status = $csv -> combine(@{$$data[$row]});
+			$status = $self -> object -> combine(@{$$data[$row]});
 
 			if ($status)
 			{
-				push @output, $csv -> string
+				push @output, $self -> object -> string
 			}
 			else
 			{
-				die "Can't combine data:\nLine: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
+				die "Can't combine data:\nLine: " . $self -> object -> error_input . "\nMessage: " . $self -> object -> error_diag . "\n";
 			}
 		}
 	}
 	else
 	{
-		die "Can't combine headers:\nHeader: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
+		die "Can't combine headers:\nHeader: " . $self -> object -> error_input . "\nMessage: " . $self -> object -> error_diag . "\n";
 	}
 
 	return [@output];
@@ -486,6 +543,8 @@ sub _rectify_data
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 
+	# Note: include is not validated, since it's a set of bit fields.
+
 	$self -> _validate($self -> empty,          empty_as_empty,        empty_as_undef,    'empty');
 	$self -> _validate($self -> escape,         escape_nothing,        escape_uri,        'escape');
 	$self -> _validate($self -> extend_data,    extend_with_empty,     extend_with_undef, 'extend_data');
@@ -494,9 +553,9 @@ sub _rectify_data
 	$self -> _validate($self -> format,         format_internal_boxed, format_html_table, 'format');
 	$self -> _validate($self -> undef,          undef_as_empty,        undef_as_undef,    'undef');
 
-	for my $align (@{$self -> alignment})
+	for my $alignment (@{$self -> alignment})
 	{
-		$self -> _validate($align, align_left, align_right, 'align');
+		$self -> _validate($alignment, align_left, align_right, 'align');
 	}
 
 	# Find the longest header/data/footer row. Ignore aligment.
@@ -602,6 +661,8 @@ sub _validate
 
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 C<Text::Table::Manifold> - Render tables in manifold formats
@@ -619,16 +680,88 @@ This is scripts/synopsis.pl:
 
 	# -----------
 
-	my($table) = Text::Table::Manifold -> new(alignment => align_center);
+	# Set parameters with new().
 
-	$table -> headers(['Name', 'Type', 'Null', 'Key', 'Auto increment']);
+	my($table) = Text::Table::Manifold -> new
+	(
+		alignment =>
+		[
+			align_left,
+			align_center,
+			align_right,
+			align_center,
+		]
+	);
+
+	$table -> headers(['Homepage', 'Country', 'Name', 'Metadata']);
 	$table -> data(
 	[
-		['id', 'int(11)', 'not null', 'primary key', 'auto_increment'],
-		['description', 'varchar(255)', 'not null', '', ''],
-		['name', 'varchar(255)', 'not null', '', ''],
-		['upper_name', 'varchar(255)', 'not null', '', ''],
-		[undef, '', '0', 'http://savage.net.au/', '<tr><td>undef</td></tr>'],
+		['http://savage.net.au/',   'Australia', 'Ron Savage',    undef],
+		['https://duckduckgo.com/', 'Earth',     'Mr. S. Engine', ''],
+	]);
+
+	# Note: Save the data, since render() may update it.
+
+	my(@data) = @{$table -> data};
+
+	# Set parameters with methods.
+
+	$table -> empty(empty_as_minus);
+	$table -> format(format_internal_boxed);
+	$table -> undef(undef_as_text);
+
+	# Set parameters with render().
+
+	print "Format: format_internal_boxed: \n";
+	print join("\n", @{$table -> render(padding => 1)}), "\n";
+	print "\n";
+
+	# Note: Restore the saved data.
+
+	$table -> data([@data]);
+
+	# Etc.
+
+This is the output of synopsis.pl:
+
+	Format: format_internal_boxed:
+	+-------------------------+-----------+---------------+----------+
+	| Homepage                |  Country  |          Name | Metadata |
+	+-------------------------+-----------+---------------+----------+
+	| http://savage.net.au/   | Australia |    Ron Savage |  undef   |
+	| https://duckduckgo.com/ |   Earth   | Mr. S. Engine |    -     |
+	+-------------------------+-----------+---------------+----------+
+
+This is scripts/utf8.pl:
+
+	#!/usr/bin/env perl
+
+	use strict;
+	use utf8;
+	use warnings;
+	use warnings qw(FATAL utf8); # Fatalize encoding glitches.
+	use open     qw(:std :utf8); # Undeclared streams in UTF-8.
+
+	use Text::Table::Manifold ':constants';
+
+	# -----------
+
+	my($table) = Text::Table::Manifold -> new
+	(
+		alignment =>
+		[
+			align_left,
+			align_center,
+			align_right,
+		]
+	);
+
+	$table -> headers(['One', 'Two', 'Three']);
+	$table -> data(
+	[
+		['Reichwaldstraße', 'Böhme', 'ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ'],
+		['Πηληϊάδεω Ἀχιλῆος', 'ΔΔΔΔΔΔΔΔΔΔ', 'A snowman: ☃'],
+		['Two ticks: ✔✔', undef, '<table><tr><td>TBA</td></tr></table>'],
 	]);
 
 	# Save the data, since render() may update it.
@@ -636,109 +769,63 @@ This is scripts/synopsis.pl:
 	my(@data) = @{$table -> data};
 
 	$table -> empty(empty_as_minus);
+	$table -> format(format_internal_boxed);
 	$table -> undef(undef_as_text);
-	$table -> padding(1);
-	$table -> format(as_internal_boxed);
+	$table -> padding(2);
 
-	print "Style: as_internal_boxed: \n";
+	print "Format: format_internal_boxed: \n";
 	print join("\n", @{$table -> render}), "\n";
 	print "\n";
 
 	# Restore the saved data.
 
 	$table -> data([@data]);
-	$table -> pass_thru({as_csv_text => {always_quote => 1} });
-	$table -> style(as_csv_text);
+	$table -> format(format_internal_github);
 
-	print "Style: as_csv: \n";
+	print "Format: format_internal_github: \n";
 	print join("\n", @{$table -> render}), "\n";
 	print "\n";
 
 	# Restore the saved data.
 
 	$table -> data([@data]);
-	$table -> style(as_internal_github);
+	$table -> footers(['One', 'Two', 'Three']);
+	$table -> include(include_headers | include_data | include_footers);
+	$table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
 
-	print "Style: as_internal_github: \n";
-	print join("\n", @{$table -> render}), "\n";
+	print "Format: format_internal_html: \n";
+	print join("\n", @{$table -> render(format => format_internal_html)}), "\n";
 	print "\n";
 
-	# Restore the saved data.
+This is the output of utf8.pl:
 
-	$table -> data([@data]);
-	$table -> escape(escape_html);
-	$table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
-	$table -> pass_thru({as_internal_html => {table => {align => 'center', border => 1} } });
+	Format: format_internal_boxed:
+	+---------------------+--------------+----------------------------------------+
+	|  One                |     Two      |                                 Three  |
+	+---------------------+--------------+----------------------------------------+
+	|  Reichwaldstraße    |    Böhme     |                       ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ  |
+	|  Πηληϊάδεω Ἀχιλῆος  |  ΔΔΔΔΔΔΔΔΔΔ  |                          A snowman: ☃  |
+	|  Two ticks: ✔✔      |    undef     |  <table><tr><td>TBA</td></tr></table>  |
+	+---------------------+--------------+----------------------------------------+
 
-	print "Style: as_internal_html: \n";
-	print join("\n", @{$table -> render(style => as_internal_html)}), "\n";
-	print "\n";
+	Format: format_internal_github:
+	One|Two|Three
+	:------------------------------------|:------------------------------------:|----------:
+	Reichwaldstraße|Böhme|ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ
+	Πηληϊάδεω Ἀχιλῆος|ΔΔΔΔΔΔΔΔΔΔ|A snowman: ☃
+	Two ticks: ✔✔|undef|<table><tr><td>TBA</td></tr></table>
 
-	# Restore the saved data.
-
-	$table -> data([@data]);
-	$table -> escape(escape_html);
-	$table -> pass_thru({as_html_table => {-style => 'color: blue'} });
-
-	print "Style: as_html_table: \n";
-	print join("\n", @{$table -> render(style => as_html_table)}), "\n";
-	print "\n";
-
-This is the output of synopsis.pl:
-
-	Style: as_internal_boxed:
-	+-------------+--------------+----------+-----------------------+-------------------------+
-	|    Name     |     Type     |   Null   |          Key          |     Auto increment      |
-	+-------------+--------------+----------+-----------------------+-------------------------+
-	|     id      |   int(11)    | not null |      primary key      |     auto_increment      |
-	| description | varchar(255) | not null |           -           |            -            |
-	|    name     | varchar(255) | not null |           -           |            -            |
-	| upper_name  | varchar(255) | not null |           -           |            -            |
-	|    undef    |      -       |          | http://savage.net.au/ | <tr><td>undef</td></tr> |
-	+-------------+--------------+----------+-----------------------+-------------------------+
-
-	Style: as_csv:
-	Name,Type,Null,Key,"Auto increment"
-	id,int(11),"not null","primary key",auto_increment
-	description,varchar(255),"not null",-,-
-	name,varchar(255),"not null",-,-
-	upper_name,varchar(255),"not null",-,-
-	undef,-,0,http://savage.net.au/,<tr><td>undef</td></tr>
-
-	Style: as_internal_github:
-	Name|Type|Null|Key|Auto increment
-	-----------|------------|--------|---------------------|-----------------------
-	id|int(11)|not null|primary key|auto_increment
-	description|varchar(255)|not null|-|-
-	name|varchar(255)|not null|-|-
-	upper_name|varchar(255)|not null|-|-
-	undef|-|0|http://savage.net.au/|<tr><td>undef</td></tr>
-
-	Style: as_internal_html:
+	Format: format_internal_html:
 	<table align = "center" border = "1">
 	<thead>
-	<th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
+	<th>One</th><th>Two</th><th>Three</th>
 	</thead>
-	<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
-	<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-	<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-	<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-	<tr><td>undef</td><td>-</td><td>0</td><td>http://savage.net.au/</td><td>&lt;tr&gt;&lt;td&gt;undef&lt;/td&gt;&lt;/tr&gt;</td></tr>
+	<td><span style='text-align:left'>Reichwaldstraße</span></td><td><span style='text-align:center'>Böhme</span></td><td><span style='text-align:right'>ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ</span></td>
+	<td><span style='text-align:left'>Πηληϊάδεω Ἀχιλῆος</span></td><td><span style='text-align:center'>ΔΔΔΔΔΔΔΔΔΔ</span></td><td><span style='text-align:right'>A snowman: ☃</span></td>
+	<td><span style='text-align:left'>Two ticks: ✔✔</span></td><td><span style='text-align:center'>undef</span></td><td><span style='text-align:right'><table><tr><td>TBA</td></tr></table></span></td>
 	<tfoot>
-	<th>One</th><th>Two</th><th>Three</th><th>Four</th><th>Five</th>
+	<th>One</th><th>Two</th><th>Three</th>
 	<tfoot>
-	</table>
-
-	Style: as_html_table:
-
-	<table style="color: blue">
-	<tbody>
-	<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
-	<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-	<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-	<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-	<tr><td>undef</td><td>-</td><td>0</td><td>http://savage.net.au/</td><td>&amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;undef&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;</td></tr>
-	</tbody>
 	</table>
 
 =head1 Description
@@ -1158,6 +1245,10 @@ The constructor. See L</Constructor and Initialization> for details of the param
 
 Note: L</render([%hash])> supports the same options as C<new()>.
 
+=head2 object()
+
+Returns the object created if an external module is loaded, else returns ''.
+
 =head2 padding([$integer])
 
 Here, the [] indicate an optional parameter.
@@ -1346,6 +1437,8 @@ Render internally.
 
 L<Text::CSV> is loaded at runtime if this option is used.
 
+So $self -> object() returns an object of type L<Text::CSV>.
+
 =item o format_internal_github => 2
 
 Render internally.
@@ -1357,6 +1450,8 @@ Render internally.
 =item o format_html_table      => 4
 
 L<HTML::Table> is loaded at runtime if this option is used.
+
+So $self -> object() returns an object of type L<HTML::Table>.
 
 =back
 

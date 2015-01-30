@@ -7,8 +7,6 @@ use Text::Table::Manifold ':constants';
 
 # -----------
 
-# Set parameters with new().
-
 my($table) = Text::Table::Manifold -> new
 (
 	alignment =>
@@ -31,16 +29,11 @@ $table -> data(
 
 my(@data) = @{$table -> data};
 
-# Set parameters with methods.
+$table -> format(format_text_csv);
+$table -> pass_thru({format_text_csv => {always_quote => 1} });
 
-$table -> empty(empty_as_minus);
-$table -> format(format_internal_boxed);
-$table -> undef(undef_as_text);
-
-# Set parameters with render().
-
-print "Format: format_internal_boxed: \n";
-print join("\n", @{$table -> render(padding => 1)}), "\n";
+print "Format: format_text_csv: \n";
+print join("\n", @{$table -> render}), "\n";
 print "\n";
 
 # Note: Restore the saved data.

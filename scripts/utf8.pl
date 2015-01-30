@@ -10,7 +10,15 @@ use Text::Table::Manifold ':constants';
 
 # -----------
 
-my($table) = Text::Table::Manifold -> new;
+my($table) = Text::Table::Manifold -> new
+(
+	alignment =>
+	[
+		align_left,
+		align_center,
+		align_right,
+	]
+);
 
 $table -> headers(['One', 'Two', 'Three']);
 $table -> data(
@@ -45,7 +53,7 @@ print "\n";
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> footers(['One', 'Two', 'Three', 'Four']);
+$table -> footers(['One', 'Two', 'Three']);
 $table -> include(include_headers | include_data | include_footers);
 $table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
 
