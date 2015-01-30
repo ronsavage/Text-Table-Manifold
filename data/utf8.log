@@ -1,16 +1,29 @@
 Style: render_internal_boxed: 
-+---------------------+--------------+-------------------+
-|         One         |     Two      |       Three       |
-+---------------------+--------------+-------------------+
-|   Reichwaldstraße   |    Böhme     |  ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ  |
-|  Πηληϊάδεω Ἀχιλῆος  |  ΔΔΔΔΔΔΔΔΔΔ  |   A snowman: ☃    |
-|    Two ticks: ✔✔    |    undef     |         -         |
-+---------------------+--------------+-------------------+
++---------------------+--------------+----------------------------------------+
+|         One         |     Two      |                 Three                  |
++---------------------+--------------+----------------------------------------+
+|   Reichwaldstraße   |    Böhme     |            ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ             |
+|  Πηληϊάδεω Ἀχιλῆος  |  ΔΔΔΔΔΔΔΔΔΔ  |              A snowman: ☃              |
+|    Two ticks: ✔✔    |    undef     |  <table><tr><td>TBA</td></tr></table>  |
++---------------------+--------------+----------------------------------------+
 
 Style: render_internal_github: 
 One|Two|Three
------------------|----------|---------------
+-----------------|----------|------------------------------------
 Reichwaldstraße|Böhme|ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ
 Πηληϊάδεω Ἀχιλῆος|ΔΔΔΔΔΔΔΔΔΔ|A snowman: ☃
-Two ticks: ✔✔|undef|-
+Two ticks: ✔✔|undef|<table><tr><td>TBA</td></tr></table>
+
+Style: render_internal_html: 
+<table align = "center" border = "1">
+<thead>
+<th>One</th><th>Two</th><th>Three</th><th></th>
+</thead>
+<tr><td>Reichwaldstraße</td><td>Böhme</td><td>ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ</td><td>-</td></tr>
+<tr><td>Πηληϊάδεω Ἀχιλῆος</td><td>ΔΔΔΔΔΔΔΔΔΔ</td><td>A snowman: ☃</td><td>-</td></tr>
+<tr><td>Two ticks: ✔✔</td><td>undef</td><td><table><tr><td>TBA</td></tr></table></td><td>-</td></tr>
+<tfoot>
+<th>One</th><th>Two</th><th>Three</th><th>Four</th>
+<tfoot>
+</table>
 

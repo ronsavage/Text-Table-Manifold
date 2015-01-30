@@ -232,7 +232,7 @@ sub _align_to_right
 
 sub _clean_data
 {
-	my($self, $headers, $data, $footers) = @_;
+	my($self, $alignment, $headers, $data, $footers) = @_;
 	my($empty)  = $self -> empty;
 	my($escape) = $self -> escape;
 	my($undef)  = $self -> undef;
@@ -277,10 +277,10 @@ sub _clean_data
 
 sub _gather_statistics
 {
-	my($self, $headers, $data, $footers) = @_;
+	my($self, $alignment, $headers, $data, $footers) = @_;
 
-	$self -> _rectify_data($headers, $data, $footers);
-	$self -> _clean_data($headers, $data, $footers);
+	$self -> _rectify_data($alignment, $headers, $data, $footers);
+	$self -> _clean_data($alignment, $headers, $data, $footers);
 
 	my(@column);
 	my($header_width);
@@ -307,7 +307,7 @@ sub _gather_statistics
 
 sub _rectify_data
 {
-	my($self, $headers, $data, $footers) = @_;
+	my($self, $alignment, $headers, $data, $footers) = @_;
 
 	# Find the longest header/data/footer row.
 
@@ -348,29 +348,35 @@ sub render
 		$self -> $key($hash{$key});
 	}
 
-	my($style) = $self -> style;
+	my($alignment) = $self -> alignment;
+	my($headers)   = $self -> headers;
+	my($data)      = $self -> data;
+	my($footers)   = $self -> footers;
+	my($style)     = $self -> style;
+
+	$self -> _gather_statistics($alignment, $headers, $data, $footers);
 
 	my($output);
 
 	if ($style & render_internal_boxed)
 	{
-		$output = $self -> render_as_internal_boxed;
+		$output = $self -> render_as_internal_boxed($alignment, $headers, $data, $footers);
 	}
 	elsif ($style & render_text_csv)
 	{
-		$output = $self -> render_as_text_csv;
+		$output = $self -> render_as_text_csv($alignment, $headers, $data, $footers);
 	}
 	elsif ($style & render_internal_github)
 	{
-		$output = $self -> render_as_internal_github;
+		$output = $self -> render_as_internal_github($alignment, $headers, $data, $footers);
 	}
 	elsif ($style & render_internal_html)
 	{
-		$output = $self -> render_as_internal_html;
+		$output = $self -> render_as_internal_html($alignment, $headers, $data, $footers);
 	}
 	elsif ($style & render_html_table)
 	{
-		$output = $self -> render_as_html_table;
+		$output = $self -> render_as_html_table($alignment, $headers, $data, $footers);
 	}
 	else
 	{
@@ -385,13 +391,7 @@ sub render
 
 sub render_as_internal_boxed
 {
-	my($self)    = @_;
-	my($headers) = $self -> headers;
-	my($data)    = $self -> data;
-	my($footers) = $self -> footers;
-
-	$self -> _gather_statistics($headers, $data, $footers);
-
+	my($self, $alignment, $headers, $data, $footers) = @_;
 	my($padding)   = $self -> padding;
 	my($widths)    = $self -> widths;
 	my($separator) = '+' . join('+', map{'-' x ($_ + 2 * $padding)} @$widths) . '+';
@@ -427,57 +427,9 @@ sub render_as_internal_boxed
 
 # ------------------------------------------------
 
-sub render_as_text_csv
-{
-	my($self)    = @_;
-	my($headers) = $self -> headers;
-	my($data)    = $self -> data;
-	my($footers) = $self -> footers;
-
-	$self -> _gather_statistics($headers, $data, $footers);
-
-	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{render_text_csv} || {});
-	my($status) = $csv -> combine(@$headers);
-
-	my(@output);
-
-	if ($status)
-	{
-		push @output, $csv -> string;
-
-		for my $row (0 .. $#$data)
-		{
-			$status = $csv -> combine(@{$$data[$row]});
-
-			if ($status)
-			{
-				push @output, $csv -> string
-			}
-			else
-			{
-				die "Can't combine data:\nLine: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
-			}
-		}
-	}
-	else
-	{
-		die "Can't combine headers:\nHeader: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
-	}
-
-	return [@output];
-
-} # End of render_as_text_csv.
-
-# ------------------------------------------------
-
 sub render_as_internal_github
 {
-	my($self)    = @_;
-	my($headers) = $self -> headers;
-	my($data)    = $self -> data;
-	my($footers) = $self -> footers;
-
-	$self -> _gather_statistics($headers, $data, $footers);
+	my($self, $alignment, $headers, $data, $footers) = @_;
 
 	my(@output) = (join('|', @$headers), join('|', map{'-' x $_} @{$self -> widths}) );
 
@@ -494,22 +446,14 @@ sub render_as_internal_github
 
 sub render_as_internal_html
 {
-	my($self)    = @_;
-	my($headers) = $self -> headers;
-	my($data)    = $self -> data;
-	my($footers) = $self -> footers;
-
-	$self -> _gather_statistics($headers, $data, $footers);
-
-	# What if there are no headers!
-
+	my($self, $alignment, $headers, $data, $footers) = @_;
 	my($table)         = '';
 	my($table_options) = ${$self -> pass_thru}{render_internal_html}{table} || {};
 	my(@table_keys)    = sort keys %$table_options;
 
 	if (scalar @table_keys)
 	{
-		$table .= ' ' . join(' ', map{qq|$_ = "$$table_options{$_}"|} keys %$table_options);
+		$table .= ' ' . join(' ', map{qq|$_ = "$$table_options{$_}"|} sort keys %$table_options);
 	}
 
 	my(@output) = "<table$table>";
@@ -546,18 +490,51 @@ sub render_as_internal_html
 
 sub render_as_html_table
 {
-	my($self)    = @_;
-	my($headers) = $self -> headers;
-	my($data)    = $self -> data;
-	my($footers) = $self -> footers;
-
-	$self -> _gather_statistics($headers, $data, $footers);
+	my($self, $alignment, $headers, $data, $footers) = @_;
 
 	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{render_html_table} }, -data => $data);
 
 	return [$html -> getTable];
 
 } # End of render_as_html_table.
+
+# ------------------------------------------------
+
+sub render_as_text_csv
+{
+	my($self, $alignment, $headers, $data, $footers) = @_;
+
+	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{render_text_csv} || {});
+	my($status) = $csv -> combine(@$headers);
+
+	my(@output);
+
+	if ($status)
+	{
+		push @output, $csv -> string;
+
+		for my $row (0 .. $#$data)
+		{
+			$status = $csv -> combine(@{$$data[$row]});
+
+			if ($status)
+			{
+				push @output, $csv -> string
+			}
+			else
+			{
+				die "Can't combine data:\nLine: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
+			}
+		}
+	}
+	else
+	{
+		die "Can't combine headers:\nHeader: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
+	}
+
+	return [@output];
+
+} # End of render_as_text_csv.
 
 # ------------------------------------------------
 

@@ -1,52 +1,40 @@
 Style: render_internal_boxed: 
-+-------------+--------------+----------+-----------------------+-------------------------+
-|    Name     |     Type     |   Null   |          Key          |     Auto increment      |
-+-------------+--------------+----------+-----------------------+-------------------------+
-|     id      |   int(11)    | not null |      primary key      |     auto_increment      |
-| description | varchar(255) | not null |           -           |            -            |
-|    name     | varchar(255) | not null |           -           |            -            |
-| upper_name  | varchar(255) | not null |           -           |            -            |
-|    undef    |      -       |          | http://savage.net.au/ | <tr><td>undef</td></tr> |
-+-------------+--------------+----------+-----------------------+-------------------------+
++----------------------------------------------------------+-----------+----------------+-------+
+|                         Homepage                         |  Country  |      Name      | Phone |
++----------------------------------------------------------+-----------+----------------+-------+
+|                  http://savage.net.au/                   | Australia |   Ron Savage   | undef |
+| https://jeffreykegler.github.io/Ocean-of-Awareness-blog/ |  America  | Jeffrey kegler |   -   |
++----------------------------------------------------------+-----------+----------------+-------+
 
 Style: render_text_csv: 
-"Name","Type","Null","Key","Auto increment"
-"id","int(11)","not null","primary key","auto_increment"
-"description","varchar(255)","not null","-","-"
-"name","varchar(255)","not null","-","-"
-"upper_name","varchar(255)","not null","-","-"
-"undef","-","0","http://savage.net.au/","<tr><td>undef</td></tr>"
+"Homepage","Country","Name","Phone"
+"http://savage.net.au/","Australia","Ron Savage","undef"
+"https://jeffreykegler.github.io/Ocean-of-Awareness-blog/","America","Jeffrey kegler","-"
 
 Style: render_internal_github: 
-Name|Type|Null|Key|Auto increment
------------|------------|--------|---------------------|-----------------------
-id|int(11)|not null|primary key|auto_increment
-description|varchar(255)|not null|-|-
-name|varchar(255)|not null|-|-
-upper_name|varchar(255)|not null|-|-
-undef|-|0|http://savage.net.au/|<tr><td>undef</td></tr>
+Homepage|Country|Name|Phone
+--------------------------------------------------------|---------|--------------|-----
+http://savage.net.au/|Australia|Ron Savage|undef
+https://jeffreykegler.github.io/Ocean-of-Awareness-blog/|America|Jeffrey kegler|-
 
 Style: as_internal_html: 
 <table align = "center" border = "1">
 <thead>
-<th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
+<th>Homepage</th><th>Country</th><th>Name</th><th>Phone</th><th></th>
 </thead>
-<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
-<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>undef</td><td>-</td><td>0</td><td>http://savage.net.au/</td><td>&lt;tr&gt;&lt;td&gt;undef&lt;/td&gt;&lt;/tr&gt;</td></tr>
+<tr><td>http://savage.net.au/</td><td>Australia</td><td>Ron Savage</td><td>undef</td><td>-</td></tr>
+<tr><td>https://jeffreykegler.github.io/Ocean-of-Awareness-blog/</td><td>America</td><td>Jeffrey kegler</td><td>-</td><td>-</td></tr>
+<tfoot>
+<th>One</th><th>Two</th><th>Three</th><th>Four</th><th>Five</th>
+<tfoot>
 </table>
 
 Style: render_html_table: 
 
 <table style="color: blue">
 <tbody>
-<tr><td>id</td><td>int(11)</td><td>not null</td><td>primary key</td><td>auto_increment</td></tr>
-<tr><td>description</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>upper_name</td><td>varchar(255)</td><td>not null</td><td>-</td><td>-</td></tr>
-<tr><td>undef</td><td>-</td><td>0</td><td>http://savage.net.au/</td><td>&amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;undef&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;</td></tr>
+<tr><td>http://savage.net.au/</td><td>Australia</td><td>Ron Savage</td><td>undef</td><td>-</td></tr>
+<tr><td>https://jeffreykegler.github.io/Ocean-of-Awareness-blog/</td><td>America</td><td>Jeffrey kegler</td><td>-</td><td>-</td></tr>
 </tbody>
 </table>
 

@@ -19,14 +19,11 @@ my($table) = Text::Table::Manifold -> new
 	]
 );
 
-$table -> headers(['Name', 'Type', 'Null', 'Key', 'Auto increment']);
+$table -> headers(['Homepage', 'Country', 'Name', 'Phone']);
 $table -> data(
 [
-	['id', 'int(11)', 'not null', 'primary key', 'auto_increment'],
-	['description', 'varchar(255)', 'not null', '', ''],
-	['name', 'varchar(255)', 'not null', '', ''],
-	['upper_name', 'varchar(255)', 'not null', '', ''],
-	[undef, '', '0', 'http://savage.net.au/', '<tr><td>undef</td></tr>'],
+	['http://savage.net.au/', 'Australia', 'Ron Savage', undef],
+	['https://jeffreykegler.github.io/Ocean-of-Awareness-blog/', 'America', 'Jeffrey kegler', ''],
 ]);
 
 # Save the data, since render() may update it.
@@ -55,7 +52,6 @@ print "\n";
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> include(include_headers | include_data | include_footers);
 $table -> style(render_internal_github);
 
 print "Style: render_internal_github: \n";
@@ -65,9 +61,9 @@ print "\n";
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> escape(escape_html);
 $table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
-$table -> include(include_headers | include_data);
+$table -> escape(escape_html);
+$table -> include(include_headers | include_data | include_footers);
 $table -> pass_thru({render_internal_html => {table => {align => 'center', border => 1} } });
 
 print "Style: as_internal_html: \n";
