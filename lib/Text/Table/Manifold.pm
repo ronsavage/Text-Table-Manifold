@@ -39,11 +39,11 @@ use Const::Exporter constants =>
 
 	# Values for style().
 
-	style_internal_boxed  =>  1, # The default.
-	style_csv_text        =>  2,
-	style_internal_github =>  4,
-	style_internal_html   =>  8,
-	style_html_table      => 16,
+	render_internal_boxed  =>  1, # The default.
+	render_csv_text        =>  2,
+	render_internal_github =>  4,
+	render_internal_html   =>  8,
+	render_html_table      => 16,
 
 	# Values for undef(), i.e. undef handling.
 
@@ -163,7 +163,7 @@ has pass_thru =>
 
 has style =>
 (
-	default  => sub{return style_internal_boxed},
+	default  => sub{return render_internal_boxed},
 	is       => 'rw',
 	isa      => Int,
 	required => 0,
@@ -189,7 +189,7 @@ our $VERSION = '0.90';
 
 # ------------------------------------------------
 
-sub align_to_center
+sub _align_to_center
 {
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
@@ -199,11 +199,11 @@ sub align_to_center
 
 	return (' ' x ($left + $padding) ) . $s . (' ' x ($right + $padding) );
 
-} # End of align_to_center;
+} # End of _align_to_center;
 
 # ------------------------------------------------
 
-sub align_to_left
+sub _align_to_left
 {
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
@@ -212,11 +212,11 @@ sub align_to_left
 
 	return (' ' x ($left + $padding) ) . $s . ' ';
 
-} # End of align_to_left;
+} # End of _align_to_left;
 
 # ------------------------------------------------
 
-sub align_to_right
+sub _align_to_right
 {
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
@@ -225,7 +225,7 @@ sub align_to_right
 
 	return ' ' . $s . (' ' x ($right + $padding) );
 
-} # End of align_to_right;
+} # End of _align_to_right;
 
 # ------------------------------------------------
 # Apply empty_as_* and undef_as_* options, as well as escaping option(s).
@@ -352,25 +352,25 @@ sub render
 
 	my($output);
 
-	if ($style & style_internal_boxed)
+	if ($style & render_internal_boxed)
 	{
-		$output = $self -> render_style_internal_boxed;
+		$output = $self -> render_as_internal_boxed;
 	}
-	elsif ($style & style_csv_text)
+	elsif ($style & render_csv_text)
 	{
-		$output = $self -> render_style_csv_text;
+		$output = $self -> render_as_csv_text;
 	}
-	elsif ($style & style_internal_github)
+	elsif ($style & render_internal_github)
 	{
-		$output = $self -> render_style_internal_github;
+		$output = $self -> render_as_internal_github;
 	}
-	elsif ($style & style_internal_html)
+	elsif ($style & render_internal_html)
 	{
-		$output = $self -> render_style_internal_html;
+		$output = $self -> render_as_internal_html;
 	}
-	elsif ($style & style_html_table)
+	elsif ($style & render_html_table)
 	{
-		$output = $self -> render_style_html_table;
+		$output = $self -> render_as_html_table;
 	}
 	else
 	{
@@ -383,7 +383,7 @@ sub render
 
 # ------------------------------------------------
 
-sub render_style_internal_boxed
+sub render_as_internal_boxed
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -423,11 +423,11 @@ sub render_style_internal_boxed
 
 	return [@output];
 
-} # End of render_style_internal_boxed.
+} # End of render_as_internal_boxed.
 
 # ------------------------------------------------
 
-sub render_style_csv_text
+sub render_as_csv_text
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -466,11 +466,11 @@ sub render_style_csv_text
 
 	return [@output];
 
-} # End of render_style_csv_text.
+} # End of render_as_csv_text.
 
 # ------------------------------------------------
 
-sub render_style_internal_github
+sub render_as_internal_github
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -488,11 +488,11 @@ sub render_style_internal_github
 
 	return [@output];
 
-} # End of render_style_internal_github.
+} # End of render_as_internal_github.
 
 # ------------------------------------------------
 
-sub render_style_internal_html
+sub render_as_internal_html
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -504,7 +504,7 @@ sub render_style_internal_html
 	# What if there are no headers!
 
 	my($table)         = '';
-	my($table_options) = ${$self -> pass_thru}{style_internal_html}{table} || {};
+	my($table_options) = ${$self -> pass_thru}{render_internal_html}{table} || {};
 	my(@table_keys)    = sort keys %$table_options;
 
 	if (scalar @table_keys)
@@ -540,11 +540,11 @@ sub render_style_internal_html
 
 	return [@output];
 
-} # End of render_style_internal_html.
+} # End of render_as_internal_html.
 
 # ------------------------------------------------
 
-sub render_style_html_table
+sub render_as_html_table
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -553,11 +553,11 @@ sub render_style_html_table
 
 	$self -> _gather_statistics($headers, $data, $footers);
 
-	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{style_html_table} }, -data => $data);
+	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{render_html_table} }, -data => $data);
 
 	return [$html -> getTable];
 
-} # End of render_style_html_table.
+} # End of render_as_html_table.
 
 # ------------------------------------------------
 
@@ -710,31 +710,31 @@ Renders your data as tables of various types, using options to the L</style([$st
 
 =over 4
 
-=item o style_internal_boxed
+=item o render_internal_boxed
 
 All headers, footers and table data are surrounded by ASCII characters.
 
 The rendering is done internally.
 
-=item o style_csv_text
+=item o render_csv_text
 
 Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
 the C<Text::CSV> object.
 
-=item o style_internal_github
+=item o render_internal_github
 
 Render as github-flavoured markdown.
 
 The rendering is done internally.
 
-=item o style_internal_html
+=item o render_internal_html
 
 Render as a HTML table. You can use the L</pass_thru([$hashref])> method to set options for the HTML
 table.
 
 The rendering is done internally.
 
-=item o style_html_table
+=item o render_html_table
 
 Passes the data to L<HTML::Table>. You can use the L</pass_thru([$hashref])> method to set options
 for the C<HTML::Table> object.
@@ -853,14 +853,32 @@ A value for this parameter is optional.
 
 Default: escape_nothing. I.e. do not transform.
 
-=item o extend => An imported constant
+=item o extend_data => An imported constant
 
 A value for this parameter is optional.
 
-The 2 constants available allow you to specify how short rows are extended. Then, after extension,
-the parameters C<empty> or C<undef> are applied.
+The 2 constants available allow you to specify how short data rows are extended. Then, after
+extension, the parameters C<empty> or C<undef> are applied.
 
-Default: extend_with_empty. I.e. extend short rows with the empty string.
+Default: extend_with_empty. I.e. extend short data rows with the empty string.
+
+=item o extend_footers => An imported constant
+
+A value for this parameter is optional.
+
+The 2 constants available allow you to specify how short footer rows are extended. Then, after
+extension, the parameters C<empty> or C<undef> are applied.
+
+Default: extend_with_empty. I.e. extend short footer rows with the empty string.
+
+=item o extend_header => An imported constant
+
+A value for this parameter is optional.
+
+The 2 constants available allow you to specify how short data header are extended. Then, after
+extension, the parameters C<empty> or C<undef> are applied.
+
+Default: extend_with_empty. I.e. extend short header rows with the empty string.
 
 =item o footers => $arrayref
 
@@ -883,6 +901,14 @@ The # of elements in each header/data/footer row does not have to be the same. S
 parameter for more.
 
 Default: [].
+
+=item o include => An imported constant
+
+A value for this parameter is optional.
+
+Controls whether header/data/footer rows are included in the output.
+
+Default: include_data | include_headers.
 
 =item o padding => $integer
 
@@ -907,7 +933,7 @@ A value for this parameter is optional.
 
 This specifies which type of rendering to perform.
 
-Default: as_internal_boxed.
+Default: render_internal_boxed.
 
 =item o undef => An imported constant
 
@@ -923,19 +949,21 @@ Default: undef_as_undef. I.e. do not transform.
 
 =head1 Methods
 
-=head2 alignment([$alignment])
+=head2 alignment([$arrayref_of_alignments_1_per_cell])
 
 Here, the [] indicate an optional parameter.
 
-Returns the alignment as a constant (actually an integer).
+Returns the alignment as an arrayref of constants (actually integers), one per column.
 
 $alignment might force spaces to be added to one or both sides of a cell value.
 
-Alignment applies equally to every cell in the table.
+Alignment applies equally to every cell in the column.
 
 This happens before any spaces specified by L</padding([$integer])> are added.
 
 See the L</FAQ#What are the constants for alignment?> for legal values for $alignment.
+
+C<alignment> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
 =head2 data([$arrayref])
 
@@ -953,6 +981,8 @@ See L</empty([$empty])> and L</undef([$undef])> for how '' and C<undef> are hand
 
 See L</extend([$extend])> for how to extend a short data row.
 
+C<data> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
 =head2 empty([$empty])
 
 Here, the [] indicate an optional parameter.
@@ -966,6 +996,8 @@ for legal values for $empty.
 
 See also L</undef([$undef])>.
 
+C<empty> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
 =head2 escape([$escape])
 
 Here, the [] indicate an optional parameter.
@@ -976,6 +1008,8 @@ $escape controls how either HTML or URIs are rendered.
 
 See the L</FAQ#What are the constants for escaping HTML and URIs?>
 for legal values for $escape.
+
+C<escape> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
 =head2 extend_data([$extend])
 
@@ -988,6 +1022,8 @@ specifies how to extend those short rows.
 
 See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
 
+C<extend_data> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
 =head2 extend_footers([$extend])
 
 Here, the [] indicate an optional parameter.
@@ -998,6 +1034,8 @@ If the # of elements in a footer row is shorter than the longest row, $extend
 specifies how to extend those short rows.
 
 See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
+
+C<extend_footers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
 =head2 extend_headers([$extend])
 
@@ -1010,6 +1048,8 @@ specifies how to extend those short rows.
 
 See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
 
+C<extend_headers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
 =head2 footers([$arrayref])
 
 Here, the [] indicate an optional parameter.
@@ -1020,6 +1060,8 @@ $arrayref, if provided, must be an arrayref of strings.
 
 See L</extend_footers([$extend])> for how to extend a short footer row.
 
+C<footers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
 =head2 headers([$arrayref])
 
 Here, the [] indicate an optional parameter.
@@ -1029,6 +1071,19 @@ Returns the headers as an arrayref of strings.
 $arrayref, if provided, must be an arrayref of strings.
 
 See L</extend([$extend])> for how to extend a short header row.
+
+C<headers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
+=head2 include([$include])
+
+Here, the [] indicate an optional parameter.
+
+Returns the option specifying if header/data/footer rows are included in the output.
+
+See the L</FAQ#What are the constants for including/excluding rows in the output?> for legal values
+for $include.
+
+C<include> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
 =head2 new([%hash])
 
@@ -1044,6 +1099,8 @@ Returns the padding as an integer.
 
 Padding is the # of spaces to add to both sides of the cell value after it has been aligned.
 
+C<padding> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
 =head2 pass_thru([$hashref])
 
 Here, the [] indicate an optional parameter.
@@ -1054,6 +1111,8 @@ The structure of this hashref is detailed in the L</FAQ>.
 
 See scripts/synopsis.pl for sample code where it is used to add attributes to the C<table> tag in
 HTML output.
+
+C<pass_thru> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
 =head2 render([%hash])
 
@@ -1068,6 +1127,28 @@ It's up to you how to handle the output. The simplest thing is to just do:
 
 Note: C<render()> supports the same options as L</new([%hash])>.
 
+C<render> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
+=head2 render_as_internal_boxed()
+
+Called by L</render([%hash])>.
+
+=head2 render_as_csv_csv().
+
+Called by L</render([%hash])>.
+
+=head2 render_as_internal_github()
+
+Called by L</render([%hash])>.
+
+=head2 render_as_internal_html()
+
+Called by L</render([%hash])>.
+
+=head2 render_as_html_table()
+
+Called by L</render([%hash])>.
+
 =head2 style([$style])
 
 Here, the [] indicate an optional parameter.
@@ -1075,6 +1156,8 @@ Here, the [] indicate an optional parameter.
 Returns the style as a constant (actually an integer).
 
 See the L</FAQ#What are the constants for styling?> for legal values for $style.
+
+C<style> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
 =head2 undef([$undef])
 
@@ -1088,6 +1171,8 @@ See the L</FAQ#What are the constants for handling cell values which are undef?>
 for legal values for $undef.
 
 See also L</empty([$empty])>.
+
+C<style> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
 =head1 FAQ
 
@@ -1109,11 +1194,11 @@ And/or you can use them in method calls:
 
 See scripts/synopsis.pl for various use cases.
 
-Note how the code uses the names of the constants. The integer values listed below are just FYI.
+Note how sample code uses the names of the constants. The integer values listed below are just FYI.
 
 =head2 What are the constants for alignment?
 
-The parameter to L</alignment([$alignment])> must be one of the following:
+The parameter to L</alignment([$arrayref_of_alignments_1_per_cell])> must be one of the following:
 
 =over 4
 
@@ -1125,7 +1210,7 @@ The parameter to L</alignment([$alignment])> must be one of the following:
 
 =back
 
-Alignment applies equally to every cell in the table.
+Alignment applies equally to every cell in a column.
 
 =head2 What are the constants for handling cell values which are empty strings?
 
@@ -1268,23 +1353,23 @@ The parameter to L</style([$style])> must be one of the following:
 
 =over 4
 
-=item o style_internal_boxed  =>  1
+=item o render_internal_boxed  =>  1
 
 Render internally.
 
-=item o style_csv_text        =>  2
+=item o render_csv_text        =>  2
 
 L<Text::CSV> is loaded at runtime if this option is used.
 
-=item o style_internal_github =>  4
+=item o render_internal_github =>  4
 
 Render internally.
 
-=item o style_internal_html   =>  8
+=item o render_internal_html   =>  8
 
 Render internally.
 
-=item o style_html_table      => 16
+=item o render_html_table      => 16
 
 L<HTML::Table> is loaded at runtime if this option is used.
 
@@ -1296,11 +1381,11 @@ It takes these (key => value) pairs:
 
 =over 4
 
-=item o style_csv_text => {...}
+=item o render_csv_text => {...}
 
 Pass these parameters to L<Text::CSV>'s new() method, for external rendering.
 
-=item o style_internal_html => {table => {...} }
+=item o render_internal_html => {table => {...} }
 
 Pass these parameters to the C<table> tag, for internal rendering.
 
