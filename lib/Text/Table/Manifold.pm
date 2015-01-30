@@ -9,9 +9,9 @@ use Const::Exporter constants =>
 [
 	# Values of alignment().
 
-	justify_left   => 0,
-	justify_center => 1, # The default.
-	justify_right  => 2,
+	align_left   => 0,
+	align_center => 1, # The default.
+	align_right  => 2,
 
 	# Values for empty(), i.e. empty string handling.
 
@@ -33,11 +33,11 @@ use Const::Exporter constants =>
 
 	# Values for style().
 
-	as_internal_boxed  => 0, # The default.
-	as_csv_text        => 1,
-	as_internal_github => 2,
-	as_internal_html   => 3,
-	as_html_table      => 4,
+	style_internal_boxed  => 0, # The default.
+	style_csv_text        => 1,
+	style_internal_github => 2,
+	style_internal_html   => 3,
+	style_html_table      => 4,
 
 	# Values for undef(), i.e. undef handling.
 
@@ -61,9 +61,9 @@ use Unicode::GCString;
 
 has alignment =>
 (
-	default  => sub{return justify_center},
+	default  => sub{return []},
 	is       => 'rw',
-	isa      => Int,
+	isa      => ArrayRef,
 	required => 0,
 );
 
@@ -91,7 +91,23 @@ has escape =>
 	required => 0,
 );
 
-has extend =>
+has extend_data =>
+(
+	default  => sub{return extend_with_empty},
+	is       => 'rw',
+	isa      => Int,
+	required => 0,
+);
+
+has extend_footers =>
+(
+	default  => sub{return extend_with_empty},
+	is       => 'rw',
+	isa      => Int,
+	required => 0,
+);
+
+has extend_headers =>
 (
 	default  => sub{return extend_with_empty},
 	is       => 'rw',
@@ -133,7 +149,7 @@ has pass_thru =>
 
 has style =>
 (
-	default  => sub{return as_internal_boxed},
+	default  => sub{return style_internal_boxed},
 	is       => 'rw',
 	isa      => Int,
 	required => 0,
@@ -159,7 +175,7 @@ our $VERSION = '0.90';
 
 # ------------------------------------------------
 
-sub align_center
+sub align_to_center
 {
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
@@ -169,11 +185,11 @@ sub align_center
 
 	return (' ' x ($left + $padding) ) . $s . (' ' x ($right + $padding) );
 
-} # End of align_center;
+} # End of align_to_center;
 
 # ------------------------------------------------
 
-sub align_left
+sub align_to_left
 {
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
@@ -182,11 +198,11 @@ sub align_left
 
 	return (' ' x ($left + $padding) ) . $s . ' ';
 
-} # End of align_left;
+} # End of align_to_left;
 
 # ------------------------------------------------
 
-sub align_right
+sub align_to_right
 {
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
@@ -195,13 +211,16 @@ sub align_right
 
 	return ' ' . $s . (' ' x ($right + $padding) );
 
-} # End of align_right;
+} # End of align_to_right;
 
 # ------------------------------------------------
+# Apply empty_as_* and undef_as_* options, as well as escaping option(s).
 
 sub _clean_data
 {
 	my($self, $headers, $data, $footers) = @_;
+
+=pod
 
 	for my $column (0 .. $#$headers)
 	{
@@ -212,6 +231,8 @@ sub _clean_data
 	{
 		$$footers[$column] = defined($$footers[$column]) ? $$footers[$column] : '-';
 	}
+
+=cut
 
 	my($empty)  = $self -> empty;
 	my($escape) = $self -> escape;
@@ -253,8 +274,9 @@ sub _clean_data
 } # End of _clean_data.
 
 # ------------------------------------------------
+# Find the maimum width of each column.
 
-sub gather_statistics
+sub _gather_statistics
 {
 	my($self, $headers, $data, $footers) = @_;
 
@@ -279,13 +301,17 @@ sub gather_statistics
 
 	$self -> widths(\@max_widths);
 
-} # End of gather_statistics.
+} # End of _gather_statistics.
 
 # ------------------------------------------------
+# Ensure all header/data/footer rows are the same length.
 
 sub _rectify_data
 {
 	my($self, $headers, $data, $footers) = @_;
+
+	# Find the longest header/data/footer row.
+
 	my($max_length) = 0;
 
 	for my $row (0 .. $#$data)
@@ -295,6 +321,19 @@ sub _rectify_data
 
 	$max_length = max $#$headers, $#$footers, $max_length;
 
+	# Now expand all rows to be the same, maximum, length.
+
+	my($filler)   = ($self -> extend_headers & extend_with_empty) ? '' : undef;
+	$$headers[$_] = $filler for ($#$headers + 1 .. $max_length);
+	$filler       = ($self -> extend_footers & extend_with_empty) ? '' : undef;
+	$$footers[$_] = $filler for ($#$footers + 1 .. $max_length);
+	$filler       = ($self -> extend_data & extend_with_empty) ? '' : undef;
+
+	for my $row (0 .. $#$data)
+	{
+		$$data[$row][$_] = $filler for ($#{$$data[$row]} + 1 .. $max_length);
+	}
+
 } # End of _rectify_data.
 
 # ------------------------------------------------
@@ -303,36 +342,42 @@ sub render
 {
 	my($self, %hash) = @_;
 
+	# Process parameters passed to render(), which can be the same as to new().
+
 	for my $key (keys %hash)
 	{
 		$self -> $key($hash{$key});
 	}
 
+	my($style) = $self -> style;
+
 	my($output);
 
-	if ($self -> style == as_internal_boxed)
+	# Don't use '$style & style_internal_boxed' because the result is 0!
+
+	if ($style == style_internal_boxed)
 	{
-		$output = $self -> render_as_internal_boxed;
+		$output = $self -> render_style_internal_boxed;
 	}
-	elsif ($self -> style == as_csv_text)
+	elsif ($style == style_csv_text)
 	{
-		$output = $self -> render_as_csv_text;
+		$output = $self -> render_style_csv_text;
 	}
-	elsif ($self -> style == as_internal_github)
+	elsif ($style == style_internal_github)
 	{
-		$output = $self -> render_as_internal_github;
+		$output = $self -> render_style_internal_github;
 	}
-	elsif ($self -> style == as_internal_html)
+	elsif ($style == style_internal_html)
 	{
-		$output = $self -> render_as_internal_html;
+		$output = $self -> render_style_internal_html;
 	}
-	elsif ($self -> style == as_html_table)
+	elsif ($style == style_html_table)
 	{
-		$output = $self -> render_as_html_table;
+		$output = $self -> render_style_html_table;
 	}
 	else
 	{
-		die 'Error: Style not implemented: ' . $self -> style . "\n";
+		die 'Error: Style not implemented: ' . $style . "\n";
 	}
 
 	return $output;
@@ -341,14 +386,14 @@ sub render
 
 # ------------------------------------------------
 
-sub render_as_internal_boxed
+sub render_style_internal_boxed
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
 	my($data)    = $self -> data;
 	my($footers) = $self -> footers;
 
-	$self -> gather_statistics($headers, $data, $footers);
+	$self -> _gather_statistics($headers, $data, $footers);
 
 	my($padding)   = $self -> padding;
 	my($widths)    = $self -> widths;
@@ -359,7 +404,7 @@ sub render_as_internal_boxed
 
 	for my $column (0 .. $#$widths)
 	{
-		push @s, $self -> align_center($$headers[$column], $$widths[$column], $padding);
+		push @s, $self -> align_to_center($$headers[$column], $$widths[$column], $padding);
 	}
 
 	push @output, '|' . join('|', @s) . '|';
@@ -371,7 +416,7 @@ sub render_as_internal_boxed
 
 		for my $column (0 .. $#$widths)
 		{
-			push @s, $self -> align_center($$data[$row][$column], $$widths[$column], $padding);
+			push @s, $self -> align_to_center($$data[$row][$column], $$widths[$column], $padding);
 		}
 
 		push @output, '|' . join('|', @s) . '|';
@@ -381,18 +426,18 @@ sub render_as_internal_boxed
 
 	return [@output];
 
-} # End of render_as_internal_boxed.
+} # End of render_style_internal_boxed.
 
 # ------------------------------------------------
 
-sub render_as_csv_text
+sub render_style_csv_text
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
 	my($data)    = $self -> data;
 	my($footers) = $self -> footers;
 
-	$self -> gather_statistics($headers, $data, $footers);
+	$self -> _gather_statistics($headers, $data, $footers);
 
 	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{as_csv} || {});
 	my($status) = $csv -> combine(@$headers);
@@ -424,18 +469,18 @@ sub render_as_csv_text
 
 	return [@output];
 
-} # End of render_as_csv_text.
+} # End of render_style_csv_text.
 
 # ------------------------------------------------
 
-sub render_as_internal_github
+sub render_style_internal_github
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
 	my($data)    = $self -> data;
 	my($footers) = $self -> footers;
 
-	$self -> gather_statistics($headers, $data, $footers);
+	$self -> _gather_statistics($headers, $data, $footers);
 
 	my(@output) = (join('|', @$headers), join('|', map{'-' x $_} @{$self -> widths}) );
 
@@ -446,23 +491,23 @@ sub render_as_internal_github
 
 	return [@output];
 
-} # End of render_as_internal_github.
+} # End of render_style_internal_github.
 
 # ------------------------------------------------
 
-sub render_as_internal_html
+sub render_style_internal_html
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
 	my($data)    = $self -> data;
 	my($footers) = $self -> footers;
 
-	$self -> gather_statistics($headers, $data, $footers);
+	$self -> _gather_statistics($headers, $data, $footers);
 
 	# What if there are no headers!
 
 	my($table)         = '';
-	my($table_options) = ${$self -> pass_thru}{as_internal_html}{table} || {};
+	my($table_options) = ${$self -> pass_thru}{style_internal_html}{table} || {};
 	my(@table_keys)    = sort keys %$table_options;
 
 	if (scalar @table_keys)
@@ -495,24 +540,24 @@ sub render_as_internal_html
 
 	return [@output];
 
-} # End of render_as_internal_html.
+} # End of render_style_internal_html.
 
 # ------------------------------------------------
 
-sub render_as_html_table
+sub render_style_html_table
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
 	my($data)    = $self -> data;
 	my($footers) = $self -> footers;
 
-	$self -> gather_statistics($headers, $data, $footers);
+	$self -> _gather_statistics($headers, $data, $footers);
 
-	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{as_html_table} }, -data => $data);
+	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{style_html_table} }, -data => $data);
 
 	return [$html -> getTable];
 
-} # End of render_as_html_table.
+} # End of render_style_html_table.
 
 # ------------------------------------------------
 
@@ -537,7 +582,7 @@ This is scripts/synopsis.pl:
 
 	# -----------
 
-	my($table) = Text::Table::Manifold -> new(alignment => justify_center);
+	my($table) = Text::Table::Manifold -> new(alignment => align_center);
 
 	$table -> headers(['Name', 'Type', 'Null', 'Key', 'Auto increment']);
 	$table -> data(
@@ -763,7 +808,7 @@ A value for this parameter is optional.
 
 Alignment applies equally to every cell in the table.
 
-Default: justify_center.
+Default: align_center.
 
 =item o data => $arrayref of arrayrefs
 
@@ -917,13 +962,35 @@ $escape controls how either HTML or URIs are rendered.
 See the L</FAQ#What are the constants for escaping HTML and URIs?>
 for legal values for $escape.
 
-=head2 extend([$extend])
+=head2 extend_data([$extend])
 
 Here, the [] indicate an optional parameter.
 
-Returns the option specifying how short rows are extended.
+Returns the option specifying how short data rows are extended.
 
-If the # of elements in any header/data/footer row is shorter than the longest row, $extend
+If the # of elements in a data row is shorter than the longest row, $extend
+specifies how to extend those short rows.
+
+See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
+
+=head2 extend_footers([$extend])
+
+Here, the [] indicate an optional parameter.
+
+Returns the option specifying how short footer rows are extended.
+
+If the # of elements in a footer row is shorter than the longest row, $extend
+specifies how to extend those short rows.
+
+See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
+
+=head2 extend_headers([$extend])
+
+Here, the [] indicate an optional parameter.
+
+Returns the option specifying how short header rows are extended.
+
+If the # of elements in a header row is shorter than the longest row, $extend
 specifies how to extend those short rows.
 
 See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
@@ -936,7 +1003,7 @@ Returns the footers as an arrayref of strings.
 
 $arrayref, if provided, must be an arrayref of strings.
 
-See L</extend([$extend])> for how to extend a short footer row.
+See L</extend_footers([$extend])> for how to extend a short footer row.
 
 =head2 headers([$arrayref])
 
@@ -1019,7 +1086,7 @@ Firstly, you must import them with:
 
 Then you can use them in the constructor:
 
-	my($table) = Text::Table::Manifold -> new(alignment => justify_center);
+	my($table) = Text::Table::Manifold -> new(alignment => align_center);
 
 And/or you can use them in method calls:
 
@@ -1035,11 +1102,11 @@ The parameter to L</alignment([$alignment])> must be one of the following:
 
 =over 4
 
-=item o justify_left  => 0
+=item o align_left  => 0
 
-=item o justify_left  => 1
+=item o align_left  => 1
 
-=item o justify_right => 2
+=item o align_right => 2
 
 =back
 
@@ -1071,6 +1138,8 @@ Convert empty cell values to undef.
 
 =back
 
+See also L</empty([$undef])> and L</undef([$undef])>.
+
 Warning: This updates the original data!
 
 =head2 What are the constants for handling cell values which are undef?
@@ -1098,6 +1167,8 @@ Do nothing.
 This is the default.
 
 =back
+
+See also L</empty([$undef])> and L</undef([$undef])>.
 
 Warning: This updates the original data!
 
@@ -1137,12 +1208,25 @@ The C<extend> option must be one of the following:
 
 =item o extend_with_empty
 
+Short header/data/footer rows are extended with the empty string.
+
+Later, the values discussed under
+L</FAQ#What are the constants for handling cell values which are empty strings?> will be applied.
+
 =item o extend_with_undef
+
+Short header/data/footer rows are extended with undef.
+
+Later, the values discussed under
+L</FAQ#What are the constants for handling cell values which are undef?> will be applied.
 
 =back
 
-Keep in mind that after short headers/data/footers are extended, the logic activated by
-L</empty([$empty])> and L</undef([$undef])> is applied.
+See L</extend_data([$extend])>, L</extend_footers([$extend])> and L</extend_headers([$extend])>.
+
+See also L</empty([$empty])> and L</undef([$undef])>.
+
+Warning: This updates the original data!
 
 =head2 What are the constants for styling?
 
@@ -1150,27 +1234,29 @@ The C<style> option must be one of the following:
 
 =over 4
 
-=item o as_internal_boxed  => 0
+=item o style_internal_boxed  => 0
 
 Render internally.
 
-=item o as_csv_text        => 1
+=item o style_csv_text        => 1
 
 L<Text::CSV> is loaded at runtime if this option is used.
 
-=item o as_internal_github => 2
+=item o style_internal_github => 2
 
 Render internally.
 
-=item o as_internal_html   => 3
+=item o style_internal_html   => 3
 
 Render internally.
 
-=item o as_html_table      => 4
+=item o style_html_table      => 4
 
 L<HTML::Table> is loaded at runtime if this option is used.
 
 =back
+
+See L</style([$style])>.
 
 =head2 What is the format of the $hashref used in the call to pass_thru()?
 
@@ -1178,13 +1264,13 @@ It takes these (key => value) pairs:
 
 =over 4
 
-=item o as_csv_text => {...}
+=item o style_csv_text => {...}
 
-Pass these parameters to L<Text::CSV>'s new() method.
+Pass these parameters to L<Text::CSV>'s new() method, for external rendering.
 
-=item o as_internal_html => {table => {...} }
+=item o style_internal_html => {table => {...} }
 
-Pass these parameters to the C<table> tag.
+Pass these parameters to the C<table> tag, for internal rendering.
 
 =back
 
