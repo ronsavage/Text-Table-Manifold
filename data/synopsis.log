@@ -1,4 +1,4 @@
-Style: render_internal_boxed: 
+Format: format_internal_boxed: 
 +----------------------------------------------------------+-----------+----------------+-------+
 | Homepage                                                 |  Country  |           Name | Phone |
 +----------------------------------------------------------+-----------+----------------+-------+
@@ -6,18 +6,18 @@ Style: render_internal_boxed:
 | https://jeffreykegler.github.io/Ocean-of-Awareness-blog/ |  America  | Jeffrey kegler |   -   |
 +----------------------------------------------------------+-----------+----------------+-------+
 
-Style: render_text_csv: 
+Format: format_text_csv: 
 "Homepage","Country","Name","Phone"
 "http://savage.net.au/","Australia","Ron Savage","undef"
 "https://jeffreykegler.github.io/Ocean-of-Awareness-blog/","America","Jeffrey kegler","-"
 
-Style: render_internal_github: 
+Format: format_internal_github: 
 Homepage|Country|Name|Phone
 --------------------------------------------------------|---------|--------------|-----
 http://savage.net.au/|Australia|Ron Savage|undef
 https://jeffreykegler.github.io/Ocean-of-Awareness-blog/|America|Jeffrey kegler|-
 
-Style: as_internal_html: 
+Format: as_internal_html: 
 <table align = "center" border = "1">
 <thead>
 <th>Homepage</th><th>Country</th><th>Name</th><th>Phone</th><th></th>
@@ -29,7 +29,7 @@ Style: as_internal_html:
 <tfoot>
 </table>
 
-Style: render_html_table: 
+Style: format_html_table: 
 
 <table style="color: blue">
 <tbody>

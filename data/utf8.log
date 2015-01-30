@@ -1,4 +1,4 @@
-Style: render_internal_boxed: 
+Format: format_internal_boxed: 
 +---------------------+--------------+----------------------------------------+
 |         One         |     Two      |                 Three                  |
 +---------------------+--------------+----------------------------------------+
@@ -7,14 +7,14 @@ Style: render_internal_boxed:
 |    Two ticks: ✔✔    |    undef     |  <table><tr><td>TBA</td></tr></table>  |
 +---------------------+--------------+----------------------------------------+
 
-Style: render_internal_github: 
+Format: format_internal_github: 
 One|Two|Three
 -----------------|----------|------------------------------------
 Reichwaldstraße|Böhme|ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ
 Πηληϊάδεω Ἀχιλῆος|ΔΔΔΔΔΔΔΔΔΔ|A snowman: ☃
 Two ticks: ✔✔|undef|<table><tr><td>TBA</td></tr></table>
 
-Style: render_internal_html: 
+Format: format_internal_html: 
 <table align = "center" border = "1">
 <thead>
 <th>One</th><th>Two</th><th>Three</th><th></th>

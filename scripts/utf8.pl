@@ -25,20 +25,20 @@ $table -> data(
 my(@data) = @{$table -> data};
 
 $table -> empty(empty_as_minus);
+$table -> format(format_internal_boxed);
 $table -> undef(undef_as_text);
 $table -> padding(2);
-$table -> style(render_internal_boxed);
 
-print "Style: render_internal_boxed: \n";
+print "Format: format_internal_boxed: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> style(render_internal_github);
+$table -> format(format_internal_github);
 
-print "Style: render_internal_github: \n";
+print "Format: format_internal_github: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
@@ -47,9 +47,9 @@ print "\n";
 $table -> data([@data]);
 $table -> footers(['One', 'Two', 'Three', 'Four']);
 $table -> include(include_headers | include_data | include_footers);
-$table -> pass_thru({render_internal_html => {table => {align => 'center', border => 1} } });
+$table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
 
-print "Style: render_internal_html: \n";
-print join("\n", @{$table -> render(style => render_internal_html)}), "\n";
+print "Format: format_internal_html: \n";
+print join("\n", @{$table -> render(format => format_internal_html)}), "\n";
 print "\n";
 

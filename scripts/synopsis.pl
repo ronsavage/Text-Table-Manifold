@@ -31,30 +31,30 @@ $table -> data(
 my(@data) = @{$table -> data};
 
 $table -> empty(empty_as_minus);
+$table -> format(format_internal_boxed);
 $table -> undef(undef_as_text);
 $table -> padding(1);
-$table -> style(render_internal_boxed);
 
-print "Style: render_internal_boxed: \n";
+print "Format: format_internal_boxed: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> pass_thru({render_text_csv => {always_quote => 1} });
-$table -> style(render_text_csv);
+$table -> format(format_text_csv);
+$table -> pass_thru({format_text_csv => {always_quote => 1} });
 
-print "Style: render_text_csv: \n";
+print "Format: format_text_csv: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> style(render_internal_github);
+$table -> format(format_internal_github);
 
-print "Style: render_internal_github: \n";
+print "Format: format_internal_github: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
@@ -64,18 +64,18 @@ $table -> data([@data]);
 $table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
 $table -> escape(escape_html);
 $table -> include(include_headers | include_data | include_footers);
-$table -> pass_thru({render_internal_html => {table => {align => 'center', border => 1} } });
+$table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
 
-print "Style: as_internal_html: \n";
-print join("\n", @{$table -> render(style => render_internal_html)}), "\n";
+print "Format: as_internal_html: \n";
+print join("\n", @{$table -> render(format => format_internal_html)}), "\n";
 print "\n";
 
 # Restore the saved data.
 
 $table -> data([@data]);
 $table -> escape(escape_html);
-$table -> pass_thru({render_html_table => {-style => 'color: blue'} });
+$table -> pass_thru({format_html_table => {-style => 'color: blue'} });
 
-print "Style: render_html_table: \n";
-print join("\n", @{$table -> render(style => render_html_table)}), "\n";
+print "Style: format_html_table: \n";
+print join("\n", @{$table -> render(format => format_html_table)}), "\n";
 print "\n";
