@@ -1,4 +1,4 @@
-Style: as_boxed: 
+Style: render_internal_boxed: 
 +---------------------+--------------+-------------------+
 |         One         |     Two      |       Three       |
 +---------------------+--------------+-------------------+
@@ -7,7 +7,7 @@ Style: as_boxed:
 |    Two ticks: ✔✔    |    undef     |         -         |
 +---------------------+--------------+-------------------+
 
-Style: as_github: 
+Style: render_internal_github: 
 One|Two|Three
 -----------------|----------|---------------
 Reichwaldstraße|Böhme|ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ

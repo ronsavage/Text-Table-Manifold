@@ -45,16 +45,17 @@ print "\n";
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> pass_thru({render_csv_text => {always_quote => 1} });
-$table -> style(render_csv_text);
+$table -> pass_thru({render_text_csv => {always_quote => 1} });
+$table -> style(render_text_csv);
 
-print "Style: render_csv: \n";
+print "Style: render_text_csv: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
 # Restore the saved data.
 
 $table -> data([@data]);
+$table -> include(include_headers | include_data | include_footers);
 $table -> style(render_internal_github);
 
 print "Style: render_internal_github: \n";
@@ -66,6 +67,7 @@ print "\n";
 $table -> data([@data]);
 $table -> escape(escape_html);
 $table -> footers(['One', 'Two', 'Three', 'Four', 'Five']);
+$table -> include(include_headers | include_data);
 $table -> pass_thru({render_internal_html => {table => {align => 'center', border => 1} } });
 
 print "Style: as_internal_html: \n";
@@ -81,5 +83,3 @@ $table -> pass_thru({render_html_table => {-style => 'color: blue'} });
 print "Style: render_html_table: \n";
 print join("\n", @{$table -> render(style => render_html_table)}), "\n";
 print "\n";
-
-print STDERR "Standard include: ", $table -> include, "\n";

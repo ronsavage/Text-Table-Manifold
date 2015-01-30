@@ -40,7 +40,7 @@ use Const::Exporter constants =>
 	# Values for style().
 
 	render_internal_boxed  =>  1, # The default.
-	render_csv_text        =>  2,
+	render_text_csv        =>  2,
 	render_internal_github =>  4,
 	render_internal_html   =>  8,
 	render_html_table      => 16,
@@ -356,9 +356,9 @@ sub render
 	{
 		$output = $self -> render_as_internal_boxed;
 	}
-	elsif ($style & render_csv_text)
+	elsif ($style & render_text_csv)
 	{
-		$output = $self -> render_as_csv_text;
+		$output = $self -> render_as_text_csv;
 	}
 	elsif ($style & render_internal_github)
 	{
@@ -401,7 +401,7 @@ sub render_as_internal_boxed
 
 	for my $column (0 .. $#$widths)
 	{
-		push @s, $self -> align_to_center($$headers[$column], $$widths[$column], $padding);
+		push @s, $self -> _align_to_center($$headers[$column], $$widths[$column], $padding);
 	}
 
 	push @output, '|' . join('|', @s) . '|';
@@ -413,7 +413,7 @@ sub render_as_internal_boxed
 
 		for my $column (0 .. $#$widths)
 		{
-			push @s, $self -> align_to_center($$data[$row][$column], $$widths[$column], $padding);
+			push @s, $self -> _align_to_center($$data[$row][$column], $$widths[$column], $padding);
 		}
 
 		push @output, '|' . join('|', @s) . '|';
@@ -427,7 +427,7 @@ sub render_as_internal_boxed
 
 # ------------------------------------------------
 
-sub render_as_csv_text
+sub render_as_text_csv
 {
 	my($self)    = @_;
 	my($headers) = $self -> headers;
@@ -436,7 +436,7 @@ sub render_as_csv_text
 
 	$self -> _gather_statistics($headers, $data, $footers);
 
-	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{as_csv} || {});
+	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{render_text_csv} || {});
 	my($status) = $csv -> combine(@$headers);
 
 	my(@output);
@@ -466,7 +466,7 @@ sub render_as_csv_text
 
 	return [@output];
 
-} # End of render_as_csv_text.
+} # End of render_as_text_csv.
 
 # ------------------------------------------------
 
@@ -716,7 +716,7 @@ All headers, footers and table data are surrounded by ASCII characters.
 
 The rendering is done internally.
 
-=item o render_csv_text
+=item o render_text_csv
 
 Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
 the C<Text::CSV> object.
@@ -1357,7 +1357,7 @@ The parameter to L</style([$style])> must be one of the following:
 
 Render internally.
 
-=item o render_csv_text        =>  2
+=item o render_text_csv        =>  2
 
 L<Text::CSV> is loaded at runtime if this option is used.
 
@@ -1381,7 +1381,7 @@ It takes these (key => value) pairs:
 
 =over 4
 
-=item o render_csv_text => {...}
+=item o render_text_csv => {...}
 
 Pass these parameters to L<Text::CSV>'s new() method, for external rendering.
 
