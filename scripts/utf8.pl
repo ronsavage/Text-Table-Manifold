@@ -25,12 +25,12 @@ $table -> undef(undef_as_text);
 $table -> padding(2);
 $table -> style(style_internal_boxed);
 
-print "Style: as_boxed: \n";
+print "Style: style_internal_boxed: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
 $table -> style(style_internal_github);
 
-print "Style: as_github: \n";
+print "Style: style_internal_github: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";

@@ -745,9 +745,7 @@ calling the C<HTML::Table>'s new() method.
 
 =back
 
-See data/*.log for output corresponding to scripts/*.pl.
-
-See the L</FAQ> for various topics, including:
+See scripts/synopsis.pl, and the L</FAQ>, for various topics, including:
 
 =over 4
 
@@ -755,7 +753,23 @@ See the L</FAQ> for various topics, including:
 
 See scripts/utf8.pl and data/utf8.log.
 
+=item o Including/excluding headers/data/footers
+
+=item o Extending short headers/data/footers rows
+
+=item o Tranforming cell values which are empty strings and undef
+
+=item o Aligning cell values
+
+=item o Padding cell values
+
+=item o Escaping URIs and HTML
+
+But not both at the same time!
+
 =back
+
+See data/*.log for output corresponding to scripts/*.pl.
 
 =head1 Distributions
 
