@@ -27,7 +27,7 @@ upper_name|varchar(255)|not null|-|-
 undef|-|0|http://savage.net.au/|<tr><td>undef</td></tr>
 
 Style: as_internal_html: 
-<table align = "center" border = "1">
+<table border = "1" align = "center">
 <thead>
 <th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
 </thead>
