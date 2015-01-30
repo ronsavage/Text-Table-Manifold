@@ -1,8 +1,8 @@
 Style: render_internal_boxed: 
 +----------------------------------------------------------+-----------+----------------+-------+
-|                         Homepage                         |  Country  |      Name      | Phone |
+| Homepage                                                 |  Country  |           Name | Phone |
 +----------------------------------------------------------+-----------+----------------+-------+
-|                  http://savage.net.au/                   | Australia |   Ron Savage   | undef |
+| http://savage.net.au/                                    | Australia |     Ron Savage | undef |
 | https://jeffreykegler.github.io/Ocean-of-Awareness-blog/ |  America  | Jeffrey kegler |   -   |
 +----------------------------------------------------------+-----------+----------------+-------+
 

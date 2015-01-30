@@ -208,9 +208,9 @@ sub _align_to_left
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
 	my($s_width) = Unicode::GCString -> new($s || '') -> chars;
-	my($left)    = $width - $s_width;
+	my($right)   = $width - $s_width;
 
-	return (' ' x ($left + $padding) ) . $s . ' ';
+	return (' ' x $padding) . $s . (' ' x ($right + $padding) );
 
 } # End of _align_to_left;
 
@@ -221,9 +221,9 @@ sub _align_to_right
 	my($self, $s, $width, $padding) = @_;
 	$s           ||= '';
 	my($s_width) = Unicode::GCString -> new($s || '') -> chars;
-	my($right)   = $width - $s_width;
+	my($left)    = $width - $s_width;
 
-	return ' ' . $s . (' ' x ($right + $padding) );
+	return (' ' x ($left + $padding) ) . $s . (' ' x $padding);
 
 } # End of _align_to_right;
 
@@ -273,7 +273,7 @@ sub _clean_data
 } # End of _clean_data.
 
 # ------------------------------------------------
-# Find the maimum width of each column.
+# Find the maimum width of header/data/footer each column.
 
 sub _gather_statistics
 {
@@ -309,7 +309,7 @@ sub _rectify_data
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 
-	# Find the longest header/data/footer row.
+	# Find the longest header/data/footer row. Ignore aligment.
 
 	my($max_length) = 0;
 
@@ -320,13 +320,19 @@ sub _rectify_data
 
 	$max_length = max $#$headers, $#$footers, $max_length;
 
+	# Shrink the alignment row if necessary.
+
+	$#$alignment = $max_length if ($#$alignment > $max_length);
+
 	# Now expand all rows to be the same, maximum, length.
 
-	my($filler)   = ($self -> extend_headers & extend_with_empty) ? '' : undef;
-	$$headers[$_] = $filler for ($#$headers + 1 .. $max_length);
-	$filler       = ($self -> extend_footers & extend_with_empty) ? '' : undef;
-	$$footers[$_] = $filler for ($#$footers + 1 .. $max_length);
-	$filler       = ($self -> extend_data & extend_with_empty) ? '' : undef;
+	my($filler)     = align_center;
+	$$alignment[$_] = $filler for ($#$alignment + 1 .. $max_length);
+	$filler         = ($self -> extend_headers & extend_with_empty) ? '' : undef;
+	$$headers[$_]   = $filler for ($#$headers + 1 .. $max_length);
+	$filler         = ($self -> extend_footers & extend_with_empty) ? '' : undef;
+	$$footers[$_]   = $filler for ($#$footers + 1 .. $max_length);
+	$filler         = ($self -> extend_data & extend_with_empty) ? '' : undef;
 
 	for my $row (0 .. $#$data)
 	{
@@ -397,11 +403,25 @@ sub render_as_internal_boxed
 	my($separator) = '+' . join('+', map{'-' x ($_ + 2 * $padding)} @$widths) . '+';
 	my(@output)    = $separator;
 
+	my($align);
 	my(@s);
 
 	for my $column (0 .. $#$widths)
 	{
-		push @s, $self -> _align_to_center($$headers[$column], $$widths[$column], $padding);
+		$align = $$alignment[$column];
+
+		if ($align & align_left)
+		{
+			push @s, $self -> _align_to_left($$headers[$column], $$widths[$column], $padding);
+		}
+		elsif ($align & align_center)
+		{
+			push @s, $self -> _align_to_center($$headers[$column], $$widths[$column], $padding);
+		}
+		else
+		{
+			push @s, $self -> _align_to_right($$headers[$column], $$widths[$column], $padding);
+		}
 	}
 
 	push @output, '|' . join('|', @s) . '|';
@@ -413,7 +433,20 @@ sub render_as_internal_boxed
 
 		for my $column (0 .. $#$widths)
 		{
-			push @s, $self -> _align_to_center($$data[$row][$column], $$widths[$column], $padding);
+			$align = $$alignment[$column];
+
+			if ($align & align_left)
+			{
+				push @s, $self -> _align_to_left($$data[$row][$column], $$widths[$column], $padding);
+			}
+			elsif ($align & align_center)
+			{
+				push @s, $self -> _align_to_center($$data[$row][$column], $$widths[$column], $padding);
+			}
+			else
+			{
+				push @s, $self -> _align_to_right($$data[$row][$column], $$widths[$column], $padding);
+			}
 		}
 
 		push @output, '|' . join('|', @s) . '|';
@@ -1150,6 +1183,10 @@ for legal values for $undef.
 See also L</empty([$empty])>.
 
 C<style> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
+=head2 widths()
+
+Returns an arrayref of the width of each column, after the data is cleaned and rectified.
 
 =head1 FAQ
 
