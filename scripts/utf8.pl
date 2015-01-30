@@ -44,20 +44,5 @@ print "\n";
 # Restore the saved data.
 
 $table -> data([@data]);
-$table -> format(format_internal_github);
 
-print "Format: format_internal_github: \n";
-print join("\n", @{$table -> render}), "\n";
-print "\n";
-
-# Restore the saved data.
-
-$table -> data([@data]);
-$table -> footers(['One', 'Two', 'Three']);
-$table -> include(include_headers | include_data | include_footers);
-$table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
-
-print "Format: format_internal_html: \n";
-print join("\n", @{$table -> render(format => format_internal_html)}), "\n";
-print "\n";
-
+# Etc.

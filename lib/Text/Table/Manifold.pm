@@ -780,22 +780,8 @@ This is scripts/utf8.pl:
 	# Restore the saved data.
 
 	$table -> data([@data]);
-	$table -> format(format_internal_github);
 
-	print "Format: format_internal_github: \n";
-	print join("\n", @{$table -> render}), "\n";
-	print "\n";
-
-	# Restore the saved data.
-
-	$table -> data([@data]);
-	$table -> footers(['One', 'Two', 'Three']);
-	$table -> include(include_headers | include_data | include_footers);
-	$table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
-
-	print "Format: format_internal_html: \n";
-	print join("\n", @{$table -> render(format => format_internal_html)}), "\n";
-	print "\n";
+	# Etc.
 
 This is the output of utf8.pl:
 
@@ -807,26 +793,6 @@ This is the output of utf8.pl:
 	|  Πηληϊάδεω Ἀχιλῆος  |  ΔΔΔΔΔΔΔΔΔΔ  |                          A snowman: ☃  |
 	|  Two ticks: ✔✔      |    undef     |  <table><tr><td>TBA</td></tr></table>  |
 	+---------------------+--------------+----------------------------------------+
-
-	Format: format_internal_github:
-	One|Two|Three
-	:------------------------------------|:------------------------------------:|----------:
-	Reichwaldstraße|Böhme|ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ
-	Πηληϊάδεω Ἀχιλῆος|ΔΔΔΔΔΔΔΔΔΔ|A snowman: ☃
-	Two ticks: ✔✔|undef|<table><tr><td>TBA</td></tr></table>
-
-	Format: format_internal_html:
-	<table align = "center" border = "1">
-	<thead>
-	<th>One</th><th>Two</th><th>Three</th>
-	</thead>
-	<td><span style='text-align:left'>Reichwaldstraße</span></td><td><span style='text-align:center'>Böhme</span></td><td><span style='text-align:right'>ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ</span></td>
-	<td><span style='text-align:left'>Πηληϊάδεω Ἀχιλῆος</span></td><td><span style='text-align:center'>ΔΔΔΔΔΔΔΔΔΔ</span></td><td><span style='text-align:right'>A snowman: ☃</span></td>
-	<td><span style='text-align:left'>Two ticks: ✔✔</span></td><td><span style='text-align:center'>undef</span></td><td><span style='text-align:right'><table><tr><td>TBA</td></tr></table></span></td>
-	<tfoot>
-	<th>One</th><th>Two</th><th>Three</th>
-	<tfoot>
-	</table>
 
 =head1 Description
 
