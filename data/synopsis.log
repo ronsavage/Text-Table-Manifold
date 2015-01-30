@@ -1,4 +1,4 @@
-Style: as_internal_boxed: 
+Style: style_internal_boxed: 
 +-------------+--------------+----------+-----------------------+-------------------------+
 |    Name     |     Type     |   Null   |          Key          |     Auto increment      |
 +-------------+--------------+----------+-----------------------+-------------------------+
@@ -9,7 +9,7 @@ Style: as_internal_boxed:
 |    undef    |      -       |          | http://savage.net.au/ | <tr><td>undef</td></tr> |
 +-------------+--------------+----------+-----------------------+-------------------------+
 
-Style: as_csv: 
+Style: style_csv: 
 Name,Type,Null,Key,"Auto increment"
 id,int(11),"not null","primary key",auto_increment
 description,varchar(255),"not null",-,-
@@ -17,7 +17,7 @@ name,varchar(255),"not null",-,-
 upper_name,varchar(255),"not null",-,-
 undef,-,0,http://savage.net.au/,<tr><td>undef</td></tr>
 
-Style: as_internal_github: 
+Style: style_internal_github: 
 Name|Type|Null|Key|Auto increment
 -----------|------------|--------|---------------------|-----------------------
 id|int(11)|not null|primary key|auto_increment
@@ -27,7 +27,7 @@ upper_name|varchar(255)|not null|-|-
 undef|-|0|http://savage.net.au/|<tr><td>undef</td></tr>
 
 Style: as_internal_html: 
-<table border = "1" align = "center">
+<table align = "center" border = "1">
 <thead>
 <th>Name</th><th>Type</th><th>Null</th><th>Key</th><th>Auto increment</th>
 </thead>
@@ -41,7 +41,7 @@ Style: as_internal_html:
 <tfoot>
 </table>
 
-Style: as_html_table: 
+Style: style_html_table: 
 
 <table style="color: blue">
 <tbody>
