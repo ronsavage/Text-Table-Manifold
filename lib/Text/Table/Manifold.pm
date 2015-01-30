@@ -9,42 +9,48 @@ use Const::Exporter constants =>
 [
 	# Values of alignment().
 
-	align_left   => 0,
-	align_center => 1, # The default.
-	align_right  => 2,
+	align_left   => 1,
+	align_center => 2, # The default.
+	align_right  => 4,
 
 	# Values for empty(), i.e. empty string handling.
 
-	empty_as_empty => 0, # Do nothing. The default.
-	empty_as_minus => 1,
-	empty_as_text  => 2, # 'empty'.
-	empty_as_undef => 3,
+	empty_as_empty => 1, # Do nothing. The default.
+	empty_as_minus => 2,
+	empty_as_text  => 4, # 'empty'.
+	empty_as_undef => 8,
 
 	# Values for escape().
 
-	escape_nothing => 0, # The default.
-	escape_html    => 1,
-	escape_uri     => 2,
+	escape_nothing => 1, # The default.
+	escape_html    => 2,
+	escape_uri     => 4,
 
 	# Values for extend().
 
-	extend_with_empty => 0, # The default.
-	extend_with_undef => 1,
+	extend_with_empty => 1, # The default.
+	extend_with_undef => 2,
+
+	# Values for include().
+
+	include_data    => 1, # Default.
+	include_footers => 2,
+	include_headers => 4, # Default.
 
 	# Values for style().
 
-	style_internal_boxed  => 0, # The default.
-	style_csv_text        => 1,
-	style_internal_github => 2,
-	style_internal_html   => 3,
-	style_html_table      => 4,
+	style_internal_boxed  =>  1, # The default.
+	style_csv_text        =>  2,
+	style_internal_github =>  4,
+	style_internal_html   =>  8,
+	style_html_table      => 16,
 
 	# Values for undef(), i.e. undef handling.
 
-	undef_as_empty => 0,
-	undef_as_minus => 1,
-	undef_as_text  => 2, # 'undef'.
-	undef_as_undef => 3, # Do nothing. The default.
+	undef_as_empty => 1,
+	undef_as_minus => 2,
+	undef_as_text  => 4, # 'undef'.
+	undef_as_undef => 8, # Do nothing. The default.
 ];
 
 use HTML::Entities::Interpolate; # This module can't be loaded at runtime.
@@ -128,6 +134,14 @@ has headers =>
 	default  => sub{return []},
 	is       => 'rw',
 	isa      => ArrayRef,
+	required => 0,
+);
+
+has include =>
+(
+	default  => sub{return include_data | include_headers},
+	is       => 'rw',
+	isa      => Int,
 	required => 0,
 );
 
@@ -219,21 +233,6 @@ sub align_to_right
 sub _clean_data
 {
 	my($self, $headers, $data, $footers) = @_;
-
-=pod
-
-	for my $column (0 .. $#$headers)
-	{
-		$$headers[$column] = defined($$headers[$column]) ? $$headers[$column] : '-';
-	}
-
-	for my $column (0 .. $#$footers)
-	{
-		$$footers[$column] = defined($$footers[$column]) ? $$footers[$column] : '-';
-	}
-
-=cut
-
 	my($empty)  = $self -> empty;
 	my($escape) = $self -> escape;
 	my($undef)  = $self -> undef;
@@ -353,25 +352,23 @@ sub render
 
 	my($output);
 
-	# Don't use '$style & style_internal_boxed' because the result is 0!
-
-	if ($style == style_internal_boxed)
+	if ($style & style_internal_boxed)
 	{
 		$output = $self -> render_style_internal_boxed;
 	}
-	elsif ($style == style_csv_text)
+	elsif ($style & style_csv_text)
 	{
 		$output = $self -> render_style_csv_text;
 	}
-	elsif ($style == style_internal_github)
+	elsif ($style & style_internal_github)
 	{
 		$output = $self -> render_style_internal_github;
 	}
-	elsif ($style == style_internal_html)
+	elsif ($style & style_internal_html)
 	{
 		$output = $self -> render_style_internal_html;
 	}
-	elsif ($style == style_html_table)
+	elsif ($style & style_html_table)
 	{
 		$output = $self -> render_style_html_table;
 	}
@@ -517,19 +514,22 @@ sub render_style_internal_html
 
 	my(@output) = "<table$table>";
 
-	if ($#$headers >= 0)
+	if ( ($self -> include & include_headers) && ($#$headers >= 0) )
 	{
 		push @output, '<thead>';
 		push @output, '<th>' . join('</th><th>', @$headers) . '</th>' if ($#$headers >= 0);
 		push @output, '</thead>';
 	}
 
-	for my $row (0 .. $#$data)
+	if ($self -> include & include_data)
 	{
-		push @output, '<tr><td>' . join('</td><td>', map{defined($_) ? $_ : ''} @{$$data[$row]}) . '</td></tr>';
+		for my $row (0 .. $#$data)
+		{
+			push @output, '<tr><td>' . join('</td><td>', map{defined($_) ? $_ : ''} @{$$data[$row]}) . '</td></tr>';
+		}
 	}
 
-	if ($#$footers >= 0)
+	if ( ($self -> include & include_footers) && ($#$footers >= 0) )
 	{
 		push @output, '<tfoot>';
 		push @output, '<th>' . join('</th><th>', @$footers) . '</th>' if ($#$footers >= 0);
@@ -710,30 +710,31 @@ Renders your data as tables of various types, using options to the L</style([$st
 
 =over 4
 
-=item o as_internal_boxed
+=item o style_internal_boxed
 
-All headers and table data are surrounded by ASCII characters.
+All headers, footers and table data are surrounded by ASCII characters.
 
 The rendering is done internally.
 
-=item o as_csv_text
+=item o style_csv_text
 
 Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
 the C<Text::CSV> object.
 
-=item o as_internal_github
+=item o style_internal_github
 
-As github-flavoured markdown.
-
-The rendering is done internally.
-
-=item o as_internal_html
-
-As a HTML table. You can use the L</pass_thru([$hashref])> method to set options for the HTML table.
+Render as github-flavoured markdown.
 
 The rendering is done internally.
 
-=item o as_html_table
+=item o style_internal_html
+
+Render as a HTML table. You can use the L</pass_thru([$hashref])> method to set options for the HTML
+table.
+
+The rendering is done internally.
+
+=item o style_html_table
 
 Passes the data to L<HTML::Table>. You can use the L</pass_thru([$hashref])> method to set options
 for the C<HTML::Table> object.
@@ -1102,11 +1103,11 @@ The parameter to L</alignment([$alignment])> must be one of the following:
 
 =over 4
 
-=item o align_left  => 0
-
 =item o align_left  => 1
 
-=item o align_right => 2
+=item o align_left  => 2
+
+=item o align_right => 4
 
 =back
 
@@ -1118,27 +1119,27 @@ The parameter to L</empty([$empty])> must be one of the following:
 
 =over 4
 
-=item o empty_as_empty => 0
+=item o empty_as_empty => 1
 
 Do nothing.
 
 This is the default.
 
-=item o empty_as_minus => 1
+=item o empty_as_minus => 2
 
 Convert empty cell values to '-'.
 
-=item o empty_as_text  => 2
+=item o empty_as_text  => 4
 
 Convert empty cell values to the text string 'empty'.
 
-=item o empty_as_undef => 3
+=item o empty_as_undef => 8
 
 Convert empty cell values to undef.
 
 =back
 
-See also L</empty([$undef])> and L</undef([$undef])>.
+See also L</undef([$undef])>.
 
 Warning: This updates the original data!
 
@@ -1148,19 +1149,19 @@ The parameter to L</undef([$undef])> must be one of the following:
 
 =over 4
 
-=item o undef_as_empty => 0
+=item o undef_as_empty => 1
 
 Convert undef cell values to the empty string ('').
 
-=item o undef_as_minus => 1
+=item o undef_as_minus => 2
 
 Convert undef cell values to '-'.
 
-=item o undef_as_text  => 2
+=item o undef_as_text  => 4
 
 Convert undef cell values to the text string 'undef'.
 
-=item o undef_as_undef => 3
+=item o undef_as_undef => 8
 
 Do nothing.
 
@@ -1168,7 +1169,7 @@ This is the default.
 
 =back
 
-See also L</empty([$undef])> and L</undef([$undef])>.
+See also L</empty([$undef])>.
 
 Warning: This updates the original data!
 
@@ -1178,16 +1179,16 @@ The parameter to L</escape([$escape])> must be one of the following:
 
 =over 4
 
-=item o escape_nothing => 0
+=item o escape_nothing => 1
 
 This is the default.
 
-=item o escape_html    => 1
+=item o escape_html    => 2
 
 Use L<HTML::Entities::Interpolate> to escape HTML. C<HTML::Entities::Interpolate> cannot be loaded
 as runtime, and so is always needed.
 
-=item o escape_uri     => 2
+=item o escape_uri     => 4
 
 Use L<URI::Escape>'s uri_escape() method to escape URIs. C<URI::Escape> is loaded at runtime
 if needed.
@@ -1200,20 +1201,21 @@ by C<URI::Escape> into '%26'. You probably don't want that, but if you do, that'
 
 Warning: This updates the original data!
 
-=head2 What are the constants for extending short rows
+=head2 What are the constants for extending short rows?
 
-The C<extend> option must be one of the following:
+The parameters to L</extend_data([$extend])>, L</extend_footers([$extend])> and
+L</extend_headers([$extend])>, must be one of the following:
 
 =over 4
 
-=item o extend_with_empty
+=item o extend_with_empty => 1
 
 Short header/data/footer rows are extended with the empty string.
 
 Later, the values discussed under
 L</FAQ#What are the constants for handling cell values which are empty strings?> will be applied.
 
-=item o extend_with_undef
+=item o extend_with_undef => 2
 
 Short header/data/footer rows are extended with undef.
 
@@ -1222,41 +1224,57 @@ L</FAQ#What are the constants for handling cell values which are undef?> will be
 
 =back
 
-See L</extend_data([$extend])>, L</extend_footers([$extend])> and L</extend_headers([$extend])>.
-
 See also L</empty([$empty])> and L</undef([$undef])>.
 
 Warning: This updates the original data!
 
-=head2 What are the constants for styling?
+=head2 What are the constants for including/excluding rows in the output?
 
-The C<style> option must be one of the following:
+The parameter to L</include([$include])> must be one or more of the following:
 
 =over 4
 
-=item o style_internal_boxed  => 0
+=item o include_data    => 1
+
+Data rows are included in the output.
+
+=item o include_footers => 2
+
+Footer rows are incuded in the output.
+
+=item o include_headers => 4
+
+Header rows are incuded in the output.
+
+=back
+
+=head2 What are the constants for styling?
+
+The parameter to L</style([$style])> must be one of the following:
+
+=over 4
+
+=item o style_internal_boxed  =>  1
 
 Render internally.
 
-=item o style_csv_text        => 1
+=item o style_csv_text        =>  2
 
 L<Text::CSV> is loaded at runtime if this option is used.
 
-=item o style_internal_github => 2
+=item o style_internal_github =>  4
 
 Render internally.
 
-=item o style_internal_html   => 3
+=item o style_internal_html   =>  8
 
 Render internally.
 
-=item o style_html_table      => 4
+=item o style_html_table      => 16
 
 L<HTML::Table> is loaded at runtime if this option is used.
 
 =back
-
-See L</style([$style])>.
 
 =head2 What is the format of the $hashref used in the call to pass_thru()?
 

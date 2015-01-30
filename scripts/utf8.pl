@@ -23,13 +23,13 @@ $table -> data(
 $table -> empty(empty_as_minus);
 $table -> undef(undef_as_text);
 $table -> padding(2);
-$table -> style(as_boxed);
+$table -> style(style_internal_boxed);
 
 print "Style: as_boxed: \n";
 print join("\n", @{$table -> render}), "\n";
 print "\n";
 
-$table -> style(as_github);
+$table -> style(style_internal_github);
 
 print "Style: as_github: \n";
 print join("\n", @{$table -> render}), "\n";

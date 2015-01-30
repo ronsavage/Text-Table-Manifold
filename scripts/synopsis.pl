@@ -81,3 +81,5 @@ $table -> pass_thru({style_html_table => {-style => 'color: blue'} });
 print "Style: style_html_table: \n";
 print join("\n", @{$table -> render(style => style_html_table)}), "\n";
 print "\n";
+
+print STDERR "Standard include: ", $table -> include, "\n";
