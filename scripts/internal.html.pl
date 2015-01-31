@@ -35,7 +35,7 @@ $table -> include(include_headers | include_data | include_footers);
 $table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
 
 print "Format: as_internal_html: \n";
-print join("\n", @{$table -> render(format => format_internal_html)}), "\n";
+print $table -> render_as_string(format => format_internal_html, newline => "\n"), "\n";
 print "\n";
 
 # Note: Restore the saved data.

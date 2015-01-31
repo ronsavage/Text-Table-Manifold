@@ -153,11 +153,11 @@ has include =>
 	required => 0,
 );
 
-has object =>
+has newline =>
 (
 	default  => sub{return ''},
 	is       => 'rw',
-	isa      => Any,
+	isa      => Str,
 	required => 0,
 );
 
@@ -286,9 +286,9 @@ sub format_as_html_table
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 
-	$self -> object(use_module('HTML::Table') -> new(%{${$self -> pass_thru}{format_html_table} }, -data => $data) );
+	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{format_html_table} }, -data => $data);
 
-	return [$self -> object -> getTable];
+	return [$html -> getTable];
 
 } # End of format_as_html_table.
 
@@ -417,7 +417,7 @@ sub format_as_internal_html
 	if ( ($include & include_headers) && ($#$headers >= 0) )
 	{
 		push @output, '<thead>';
-		push @output, '<th>' . join('</th><th>', @$headers) . '</th>' if ($#$headers >= 0);
+		push @output, '<tr><th>' . join('</th><th>', @$headers) . '</th></tr>' if ($#$headers >= 0);
 		push @output, '</thead>';
 	}
 
@@ -451,14 +451,14 @@ sub format_as_internal_html
 				push @line, "<td>$alignment{$align}$value</span></td>";
 			}
 
-			push @output, join('',  @line);
+			push @output, '<tr>' . join('',  @line) . '</tr>';
 		}
 	}
 
 	if ( ($include & include_footers) && ($#$footers >= 0) )
 	{
 		push @output, '<tfoot>';
-		push @output, '<th>' . join('</th><th>', @$footers) . '</th>' if ($#$footers >= 0);
+		push @output, '<tr><th>' . join('</th><th>', @$footers) . '</th></tr>' if ($#$footers >= 0);
 		push @output, '<tfoot>';
 	}
 
@@ -474,32 +474,32 @@ sub format_as_text_csv
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 
-	$self -> object(use_module('Text::CSV') -> new(${$self -> pass_thru}{format_text_csv} || {}) );
-	my($status) = $self -> object -> combine(@$headers);
+	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{format_text_csv} || {});
+	my($status) = $csv -> combine(@$headers);
 
 	my(@output);
 
 	if ($status)
 	{
-		push @output, $self -> object -> string;
+		push @output, $csv -> string;
 
 		for my $row (0 .. $#$data)
 		{
-			$status = $self -> object -> combine(@{$$data[$row]});
+			$status = $csv -> combine(@{$$data[$row]});
 
 			if ($status)
 			{
-				push @output, $self -> object -> string
+				push @output, $csv -> string
 			}
 			else
 			{
-				die "Can't combine data:\nLine: " . $self -> object -> error_input . "\nMessage: " . $self -> object -> error_diag . "\n";
+				die "Can't combine data:\nLine: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
 			}
 		}
 	}
 	else
 	{
-		die "Can't combine headers:\nHeader: " . $self -> object -> error_input . "\nMessage: " . $self -> object -> error_diag . "\n";
+		die "Can't combine headers:\nHeader: " . $csv -> error_input . "\nMessage: " . $csv -> error_diag . "\n";
 	}
 
 	return [@output];
@@ -644,6 +644,17 @@ sub render
 
 # ------------------------------------------------
 
+sub render_as_string
+{
+	my($self, %hash) = @_;
+	my($newline)     = defined($hash{newline}) ? $hash{newline} : $self -> newline;
+
+	return join($newline, @{$self -> render(%hash)});
+
+} # End of render_as_string.
+
+# ------------------------------------------------
+
 sub _validate
 {
 	my($self, $value, $min, $max, $name) = @_;
@@ -716,59 +727,19 @@ This is scripts/synopsis.pl:
 	print join("\n", @{$table -> render(padding => 1)}), "\n";
 	print "\n";
 
-	# Note: Restore the saved data.
-
-	$table -> data([@data]);
-
-	# Etc.
-
-This is the output of synopsis.pl:
-
-	Format: format_internal_boxed:
-	+-------------------------+-----------+---------------+----------+
-	| Homepage                |  Country  |          Name | Metadata |
-	+-------------------------+-----------+---------------+----------+
-	| http://savage.net.au/   | Australia |    Ron Savage |  undef   |
-	| https://duckduckgo.com/ |   Earth   | Mr. S. Engine |    -     |
-	+-------------------------+-----------+---------------+----------+
-
-This is scripts/utf8.pl:
-
-	#!/usr/bin/env perl
-
-	use strict;
-	use utf8;
-	use warnings;
-	use warnings qw(FATAL utf8); # Fatalize encoding glitches.
-	use open     qw(:std :utf8); # Undeclared streams in UTF-8.
-
-	use Text::Table::Manifold ':constants';
-
-	# -----------
-
-	my($table) = Text::Table::Manifold -> new
-	(
-		alignment =>
-		[
-			align_left,
-			align_center,
-			align_right,
-		]
-	);
-
 	$table -> headers(['One', 'Two', 'Three']);
 	$table -> data(
 	[
 		['Reichwaldstraße', 'Böhme', 'ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ'],
-		['Πηληϊάδεω Ἀχιλῆος', 'ΔΔΔΔΔΔΔΔΔΔ', 'A snowman: ☃'],
+		['ΔΔΔΔΔΔΔΔΔΔ', 'Πηληϊάδεω Ἀχιλῆος', 'A snowman: ☃'],
 		['Two ticks: ✔✔', undef, '<table><tr><td>TBA</td></tr></table>'],
 	]);
 
 	# Save the data, since render() may update it.
 
-	my(@data) = @{$table -> data};
+	@data = @{$table -> data};
 
-	$table -> empty(empty_as_minus);
+	$table -> empty(empty_as_text);
 	$table -> format(format_internal_boxed);
 	$table -> undef(undef_as_text);
 	$table -> padding(2);
@@ -783,16 +754,24 @@ This is scripts/utf8.pl:
 
 	# Etc.
 
-This is the output of utf8.pl:
+This is the output of synopsis.pl:
 
 	Format: format_internal_boxed:
-	+---------------------+--------------+----------------------------------------+
-	|  One                |     Two      |                                 Three  |
-	+---------------------+--------------+----------------------------------------+
-	|  Reichwaldstraße    |    Böhme     |                       ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ  |
-	|  Πηληϊάδεω Ἀχιλῆος  |  ΔΔΔΔΔΔΔΔΔΔ  |                          A snowman: ☃  |
-	|  Two ticks: ✔✔      |    undef     |  <table><tr><td>TBA</td></tr></table>  |
-	+---------------------+--------------+----------------------------------------+
+	+-------------------------+-----------+---------------+----------+
+	| Homepage                |  Country  |          Name | Metadata |
+	+-------------------------+-----------+---------------+----------+
+	| http://savage.net.au/   | Australia |    Ron Savage |  undef   |
+	| https://duckduckgo.com/ |   Earth   | Mr. S. Engine |  empty   |
+	+-------------------------+-----------+---------------+----------+
+
+	Format: format_internal_boxed:
+	+-------------------+---------------------+----------------------------------------+
+	|  One              |         Two         |                                 Three  |
+	+-------------------+---------------------+----------------------------------------+
+	|  Reichwaldstraße  |        Böhme        |                       ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ  |
+	|  ΔΔΔΔΔΔΔΔΔΔ       |  Πηληϊάδεω Ἀχιλῆος  |                          A snowman: ☃  |
+	|  Two ticks: ✔✔    |        undef        |  <table><tr><td>TBA</td></tr></table>  |
+	+-------------------+---------------------+----------------------------------------+
 
 =head1 Description
 
@@ -851,6 +830,8 @@ See scripts/utf8.pl and data/utf8.log.
 
 =item o Aligning cell values
 
+But not decimal places, yet.
+
 =item o Padding cell values
 
 =item o Escaping URIs and HTML
@@ -858,6 +839,10 @@ See scripts/utf8.pl and data/utf8.log.
 But not both at the same time!
 
 =back
+
+Results are returned as an arrayref, by L</render([%hash])>, or as a string, by
+L</render_as_string([%hash])>. The latter accepts a (newline => $string) pair in %hash, which is used
+to join the elements of the internal call to L</render([%hash])>. $string defaults to ''.
 
 See data/*.log for output corresponding to scripts/*.pl.
 
@@ -1007,6 +992,16 @@ A value for this parameter is optional.
 Controls whether header/data/footer rows are included in the output.
 
 Default: include_data | include_headers.
+
+=item o newline => $string
+
+A value for this parameter is optional.
+
+L</render_as_string([%hash])> uses $hash{newline}, or $self -> newline, in Perl's
+C<join($newline, @$araref> to join the elements of the arrayref returned by internally calling
+L</render([%hash])>.
+
+Default: ''.
 
 =item o padding => $integer
 
@@ -1211,10 +1206,6 @@ The constructor. See L</Constructor and Initialization> for details of the param
 
 Note: L</render([%hash])> supports the same options as C<new()>.
 
-=head2 object()
-
-Returns the object created if an external module is loaded, else returns ''.
-
 =head2 padding([$integer])
 
 Here, the [] indicate an optional parameter.
@@ -1252,6 +1243,15 @@ It's up to you how to handle the output. The simplest thing is to just do:
 Note: C<render()> supports the same options as L</new([%hash])>.
 
 C<render> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+
+=head2 render_as_string([%hash])
+
+Here, the [] indicate an optional parameter.
+
+Returns the rendered data as a string.
+
+C<render_as_string> uses $hash{newline}, or $self -> newline, in Perl's C<join($newline, @$araref>
+to join the elements of the arrayref returned by internally calling L</render([%hash])>.
 
 =head2 undef([$undef])
 
@@ -1403,8 +1403,6 @@ Render internally.
 
 L<Text::CSV> is loaded at runtime if this option is used.
 
-So $self -> object() returns an object of type L<Text::CSV>.
-
 =item o format_internal_github => 2
 
 Render internally.
@@ -1416,8 +1414,6 @@ Render internally.
 =item o format_html_table      => 4
 
 L<HTML::Table> is loaded at runtime if this option is used.
-
-So $self -> object() returns an object of type L<HTML::Table>.
 
 =back
 

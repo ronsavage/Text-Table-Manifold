@@ -1,12 +1,12 @@
 Format: as_internal_html: 
 <table align = "center" border = "1">
 <thead>
-<th>Homepage</th><th>Country</th><th>Name</th><th>Metadata</th>
+<tr><th>Homepage</th><th>Country</th><th>Name</th><th>Metadata</th></tr>
 </thead>
-<td><span style='text-align:left'>http://savage.net.au/</span></td><td><span style='text-align:center'>Australia</span></td><td><span style='text-align:right'>Ron Savage</span></td><td><span style='text-align:center'></span></td>
-<td><span style='text-align:left'>https://duckduckgo.com/</span></td><td><span style='text-align:center'>Earth</span></td><td><span style='text-align:right'>Mr. S. Engine</span></td><td><span style='text-align:center'></span></td>
+<tr><td><span style='text-align:left'>http://savage.net.au/</span></td><td><span style='text-align:center'>Australia</span></td><td><span style='text-align:right'>Ron Savage</span></td><td><span style='text-align:center'></span></td></tr>
+<tr><td><span style='text-align:left'>https://duckduckgo.com/</span></td><td><span style='text-align:center'>Earth</span></td><td><span style='text-align:right'>Mr. S. Engine</span></td><td><span style='text-align:center'></span></td></tr>
 <tfoot>
-<th>One</th><th>Two</th><th>Three</th><th>Four</th>
+<tr><th>One</th><th>Two</th><th>Three</th><th>Four</th></tr>
 <tfoot>
 </table>
 

@@ -24,7 +24,7 @@ $table -> headers(['One', 'Two', 'Three']);
 $table -> data(
 [
 	['Reichwaldstraße', 'Böhme', 'ʎ ʏ ʐ ʑ ʒ ʓ ʙ ʚ'],
-	['Πηληϊάδεω Ἀχιλῆος', 'ΔΔΔΔΔΔΔΔΔΔ', 'A snowman: ☃'],
+	['ΔΔΔΔΔΔΔΔΔΔ', 'Πηληϊάδεω Ἀχιλῆος', 'A snowman: ☃'],
 	['Two ticks: ✔✔', undef, '<table><tr><td>TBA</td></tr></table>'],
 ]);
 
@@ -32,7 +32,7 @@ $table -> data(
 
 my(@data) = @{$table -> data};
 
-$table -> empty(empty_as_minus);
+$table -> empty(empty_as_text);
 $table -> format(format_internal_boxed);
 $table -> undef(undef_as_text);
 $table -> padding(2);

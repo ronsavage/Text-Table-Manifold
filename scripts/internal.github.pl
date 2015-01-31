@@ -34,7 +34,7 @@ $table -> undef(undef_as_text);
 $table -> format(format_internal_github);
 
 print "Format: format_internal_github: \n";
-print join("\n", @{$table -> render}), "\n";
+print $table -> render_as_string, "\n";
 print "\n";
 
 # Restore the saved data.
