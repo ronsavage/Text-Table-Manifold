@@ -33,7 +33,7 @@ $table -> footers(['One', 'Two', 'Three', 'Four']);
 $table -> empty(empty_as_text);
 $table -> escape(escape_html);
 $table -> include(include_headers | include_data | include_footers);
-$table -> pass_thru({format_internal_html => {table => {align => 'center', border => 1} } });
+$table -> pass_thru({new => {table => {align => 'center', border => 1} } });
 $table -> undef(undef_as_text);
 
 print "Format: as_internal_html: \n";

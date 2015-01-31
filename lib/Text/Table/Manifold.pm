@@ -33,11 +33,12 @@ use Const::Exporter constants =>
 
 	# Values for format().
 
-	format_internal_boxed  => 0, # The default.
-	format_text_csv        => 1,
-	format_internal_github => 2,
-	format_internal_html   => 3,
-	format_html_table      => 4,
+	format_internal_boxed        => 0, # The default.
+	format_text_csv              => 1,
+	format_internal_github       => 2,
+	format_internal_html         => 3,
+	format_html_table            => 4,
+	format_text_unicodebox_table => 5,
 
 	# Values for include().
 
@@ -286,7 +287,7 @@ sub format_as_html_table
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 
-	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{format_html_table} }, -data => $data);
+	my($html) = use_module('HTML::Table') -> new(%{${$self -> pass_thru}{new} }, -data => $data);
 
 	return [$html -> getTable];
 
@@ -403,7 +404,7 @@ sub format_as_internal_html
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 	my($table)         = '';
-	my($table_options) = ${$self -> pass_thru}{format_internal_html}{table} || {};
+	my($table_options) = ${$self -> pass_thru}{new}{table} || {};
 	my(@table_keys)    = sort keys %$table_options;
 	my($include)       = $self -> include;
 
@@ -474,7 +475,7 @@ sub format_as_text_csv
 {
 	my($self, $alignment, $headers, $data, $footers) = @_;
 
-	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{format_text_csv} || {});
+	my($csv)    = use_module('Text::CSV') -> new(${$self -> pass_thru}{new} || {});
 	my($status) = $csv -> combine(@$headers);
 
 	my(@output);
@@ -505,6 +506,35 @@ sub format_as_text_csv
 	return [@output];
 
 } # End of format_as_text_csv.
+
+# ------------------------------------------------
+
+sub format_as_text_unicodebox_table
+{
+	my($self, $alignment, $headers, $data, $footers) = @_;
+	my($include) = $self -> include;
+	my($table)   = use_module('Text::UnicodeBox::Table') -> new(%{${$self -> pass_thru}{new} });
+
+	if ( ($include & include_headers) && ($#$headers >= 0) )
+	{
+		# Note: Text::UnicodeBox::Table does not support central alignment.
+
+		my(@align) = map{ ($_ == align_left) ? 'left' : 'right'} @{$self -> alignment};
+
+		$table -> add_header({alignment => [@align]}, @$headers);
+	}
+
+	if ($include & include_data)
+	{
+		for my $row (0 .. $#$data)
+		{
+			$table -> add_row(@{$$data[$row]});
+		}
+	}
+
+	return [$table -> render];
+
+} # End of format_as_text_unicodebox_table.
 
 # ------------------------------------------------
 # Find the maimum width of header/data/footer each column.
@@ -545,13 +575,13 @@ sub _rectify_data
 
 	# Note: include is not validated, since it's a set of bit fields.
 
-	$self -> _validate($self -> empty,          empty_as_empty,        empty_as_undef,    'empty');
-	$self -> _validate($self -> escape,         escape_nothing,        escape_uri,        'escape');
-	$self -> _validate($self -> extend_data,    extend_with_empty,     extend_with_undef, 'extend_data');
-	$self -> _validate($self -> extend_footers, extend_with_empty,     extend_with_undef, 'extend_headers');
-	$self -> _validate($self -> extend_footers, extend_with_empty,     extend_with_undef, 'extend_footers');
-	$self -> _validate($self -> format,         format_internal_boxed, format_html_table, 'format');
-	$self -> _validate($self -> undef,          undef_as_empty,        undef_as_undef,    'undef');
+	$self -> _validate($self -> empty,          empty_as_empty,        empty_as_undef,               'empty');
+	$self -> _validate($self -> escape,         escape_nothing,        escape_uri,                   'escape');
+	$self -> _validate($self -> extend_data,    extend_with_empty,     extend_with_undef,            'extend_data');
+	$self -> _validate($self -> extend_footers, extend_with_empty,     extend_with_undef,            'extend_headers');
+	$self -> _validate($self -> extend_footers, extend_with_empty,     extend_with_undef,            'extend_footers');
+	$self -> _validate($self -> format,         format_internal_boxed, format_text_unicodebox_table, 'format');
+	$self -> _validate($self -> undef,          undef_as_empty,        undef_as_undef,               'undef');
 
 	for my $alignment (@{$self -> alignment})
 	{
@@ -617,10 +647,6 @@ sub render
 	{
 		$output = $self -> format_as_internal_boxed($alignment, $headers, $data, $footers);
 	}
-	elsif ($format == format_text_csv)
-	{
-		$output = $self -> format_as_text_csv($alignment, $headers, $data, $footers);
-	}
 	elsif ($format == format_internal_github)
 	{
 		$output = $self -> format_as_internal_github($alignment, $headers, $data, $footers);
@@ -632,6 +658,14 @@ sub render
 	elsif ($format == format_html_table)
 	{
 		$output = $self -> format_as_html_table($alignment, $headers, $data, $footers);
+	}
+	elsif ($format == format_text_csv)
+	{
+		$output = $self -> format_as_text_csv($alignment, $headers, $data, $footers);
+	}
+	elsif ($format == format_text_unicodebox_table)
+	{
+		$output = $self -> format_as_text_unicodebox_table($alignment, $headers, $data, $footers);
 	}
 	else
 	{
@@ -685,7 +719,10 @@ This is scripts/synopsis.pl:
 	#!/usr/bin/env perl
 
 	use strict;
+	use utf8;
 	use warnings;
+	use warnings qw(FATAL utf8); # Fatalize encoding glitches.
+	use open     qw(:std :utf8); # Undeclared streams in UTF-8.
 
 	use Text::Table::Manifold ':constants';
 
@@ -717,7 +754,7 @@ This is scripts/synopsis.pl:
 
 	# Set parameters with methods.
 
-	$table -> empty(empty_as_minus);
+	$table -> empty(empty_as_text);
 	$table -> format(format_internal_boxed);
 	$table -> undef(undef_as_text);
 
@@ -739,7 +776,7 @@ This is scripts/synopsis.pl:
 
 	@data = @{$table -> data};
 
-	$table -> empty(empty_as_text);
+	$table -> empty(empty_as_minus);
 	$table -> format(format_internal_boxed);
 	$table -> undef(undef_as_text);
 	$table -> padding(2);
@@ -793,13 +830,6 @@ The rendering is done internally.
 
 See scripts/internal.boxed.pl and output data/internal.boxed.log.
 
-=item o format_text_csv
-
-Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
-the C<Text::CSV> object constructor.
-
-See scripts/text.csv.pl and output data/text.csv.log.
-
 =item o format_internal_github
 
 Render as github-flavoured markdown.
@@ -826,17 +856,32 @@ Warning: You must use C<Text::Table::Manifold>'s C<data()> method, or the C<data
 C<new()>, and not the C<-data> option to C<HTML::Table>. This is because the module processes the
 data before calling the C<HTML::Table> constructor.
 
+=item o format_text_csv
+
+Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
+the C<Text::CSV> object constructor.
+
+See scripts/html.table.pl and output data/html.table.log, and also scripts/text.csv.pl and output
+data/text.csv.log.
+
+=item o format_text_unicodebox_table
+
+Passes the data to L<Text::UnicodeBox::Table>. You can use the L</pass_thru([$hashref])> method to
+set options for the C<Text::UnicodeBox::Table> object constructor.
+
+See scripts/text.unicodebox.table.pl and output data/text.unicodebox.table.log.
+
 =back
 
 Features:
 
 =over 4
 
-=item o Generic interface to all possible table formats
+=item o Generic interface to all supported table formats
 
 =item o Separately specify header/data/footer rows
 
-=item o Include/exclude header/data/footer rows
+=item o Separately include/exclude header/data/footer rows
 
 =item o Align cell values
 
@@ -844,7 +889,7 @@ Each column has its own alignment option, left, center or right.
 
 But decimal places are not alignable, yet.
 
-=item o Escape URIs and HTML
+=item o Escape HTML entities or URIs
 
 But not both at the same time!
 
@@ -864,8 +909,8 @@ This takes place before the transformation, if any, mentioned next.
 
 The arrayref is returned by L</render([%hash])>, and the string by L</render_as_string([%hash])>.
 
-When returning a string by calling C<render_as_string()>, you can specify how the lines in the
-string are joined.
+When returning a string by calling C<render_as_string()> (which calls C<render()>), you can specify
+how the lines in the arrayref are joined.
 
 In the same way the C<format> parameter discussed above controls the output, the C<join>
 parameter controls the join.
@@ -922,17 +967,20 @@ Key-value pairs accepted in the parameter list (see corresponding methods for de
 
 =item o alignment => $arrayref of imported constants
 
-A value for this parameter is optional.
-
-There should be one array element per column of data.
+This specifies alignment per column. There should be one array element per column of data. The
+$arrayref will be auto-extended if necessary, using the constant C<align_center>.
 
 Alignment applies equally to every cell in the column.
 
+A value for this parameter is optional.
+
 Default: align_center for every column.
 
-=item o data => $arrayref of arrayrefs
+=item o data => $arrayref_of_arrayrefs
 
-An arrayref of arrayrefs, each one a line of data.
+This specifies the table of cell values.
+
+An arrayref of arrayrefs, each inner arrayref is a row of data.
 
 The # of elements in each alignment/header/data/footer row does not have to be the same. See the
 C<extend*> parameters for more. Auto-extension results in all rows being the same length.
@@ -943,16 +991,18 @@ Default: [].
 
 =item o empty => An imported constant
 
-A value for this parameter is optional.
-
 This specifies how to transform cell values which are the empty string. See also the C<undef>
 parameter.
 
 The C<empty> parameter is activated after the C<extend*> parameters has been applied.
 
+A value for this parameter is optional.
+
 Default: empty_as_empty. I.e. do not transform.
 
 =item o escape => An imported constant
+
+This specifies escaping of either HTML entities or URIs.
 
 A value for this parameter is optional.
 
@@ -960,90 +1010,90 @@ Default: escape_nothing. I.e. do not transform.
 
 =item o extend_data => An imported constant
 
-A value for this parameter is optional.
-
 The 2 constants available allow you to specify how short data rows are extended. Then, after
-extension, the parameters C<empty> or C<undef> are applied.
+extension, the transformations specified by the parameters C<empty> and C<undef> are applied.
 
-The alignment $arrayref is extended with the value C<align_center>, if necessary.
+A value for this parameter is optional.
 
 Default: extend_with_empty. I.e. extend short data rows with the empty string.
 
 =item o extend_footers => An imported constant
 
-A value for this parameter is optional.
-
 The 2 constants available allow you to specify how short footer rows are extended. Then, after
-extension, the parameters C<empty> or C<undef> are applied.
+extension, the transformations specified by the parameters C<empty> and C<undef> are applied.
+
+A value for this parameter is optional.
 
 Default: extend_with_empty. I.e. extend short footer rows with the empty string.
 
 =item o extend_headers => An imported constant
 
-A value for this parameter is optional.
-
 The 2 constants available allow you to specify how short header rows are extended. Then, after
-extension, the parameters C<empty> or C<undef> are applied.
+extension, the transformations specified by the parameters C<empty> and C<undef> are applied.
+
+A value for this parameter is optional.
 
 Default: extend_with_empty. I.e. extend short header rows with the empty string.
 
 =item o footers => $arrayref
-
-A value for this parameter is optional.
 
 These are the column footers. See also the C<headers> option.
 
 The # of elements in each header/data/footer row does not have to be the same. See the C<extend*>
 parameters for more.
 
+A value for this parameter is optional.
+
 Default: [].
 
 =item o format => An imported constant
 
-A value for this parameter is optional.
-
 This specifies which format to output from the rendering methods.
+
+A value for this parameter is optional.
 
 Default: format_internal_boxed.
 
 =item o headers => $arrayref
-
-A value for this parameter is optional.
 
 These are the column headers. See also the C<footers> option.
 
 The # of elements in each header/data/footer row does not have to be the same. See the C<extend*>
 parameters for more.
 
+A value for this parameter is optional.
+
 Default: [].
 
 =item o include => An imported constant
-
-A value for this parameter is optional.
 
 Controls whether header/data/footer rows are included in the output.
 
 The are three constants available, and any of them can be combined with '|', the logical OR
 operator.
 
-Default: include_data | include_headers.
+A value for this parameter is optional.
+
+Default: include_headers | include_data.
 
 =item o join => $string
-
-A value for this parameter is optional.
 
 L</render_as_string([%hash])> uses $hash{join}, or $self -> join, in Perl's
 C<join($join, @$araref)> to join the elements of the arrayref returned by internally calling
 L</render([%hash])>.
 
+C<render()> ignores the C<join> key in the hash.
+
+A value for this parameter is optional.
+
 Default: ''.
 
 =item o padding => $integer
 
-A value for this parameter is optional.
-
 This integer is the # of spaces added to each side of the cell value, after the C<alignment>
 parameter has been applied.
+
+A value for this parameter is optional.
 
 Default: 0.
 
@@ -1053,15 +1103,17 @@ A hashref of values to pass thru to another object.
 
 The keys in this $hashref control what parameters are passed to rendering routines.
 
+A value for this parameter is optional.
+
 Default: {}.
 
 =item o undef => An imported constant
 
-A value for this parameter is optional.
-
 This specifies how to transform cell values which are undef. See also the C<empty> parameter.
 
 The C<undef> parameter is activated after the C<extend*> parameters have been applied.
+
+A value for this parameter is optional.
 
 Default: undef_as_undef. I.e. do not transform.
 
@@ -1069,11 +1121,16 @@ Default: undef_as_undef. I.e. do not transform.
 
 =head1 Methods
 
+See the L</FAQ> for details of all importable constants mentioned here.
+
+And remember, all methods listed here which are parameters to L</new([%hash])>, are also parameters
+to both L</render([%hash])> and L</render_as_string([%hash])>.
+
 =head2 alignment([$arrayref])
 
 Here, the [] indicate an optional parameter.
 
-Returns the alignment as an arrayref of constants (actually integers), one per column.
+Returns the alignment as an arrayref of constants, one per column.
 
 There should be one element in $arrayref for each column of data. If the $arrayref is too short,
 C<align_center> is the default for the missing alignments.
@@ -1103,7 +1160,8 @@ Use Perl's C<undef> or '' (the empty string) for missing values.
 
 See L</empty([$empty])> and L</undef([$undef])> for how '' and C<undef> are handled.
 
-See L</extend_data([$extend])> for how to extend a short data row.
+See L</extend_data([$extend])> for how to extend short data rows, or let the code extend auto-extend
+them.
 
 C<data> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
@@ -1126,11 +1184,11 @@ C<empty> is a parameter to L</new([%hash])>. See L</Constructor and Initializati
 
 Here, the [] indicate an optional parameter.
 
-Returns the option specifying how HTML and URIs are being dealt with.
+Returns the option specifying how HTML entities and URIs are being dealt with.
 
-$escape controls how either HTML or URIs are rendered.
+$escape controls how either HTML entities or URIs are rendered.
 
-See the L</FAQ#What are the constants for escaping HTML and URIs?>
+See the L</FAQ#What are the constants for escaping HTML entities and URIs?>
 for legal values for $escape.
 
 C<escape> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
@@ -1182,7 +1240,8 @@ Returns the footers as an arrayref of strings.
 
 $arrayref, if provided, must be an arrayref of strings.
 
-See L</extend_footers([$extend])> for how to extend a short footer row.
+See L</extend_footers([$extend])> for how to extend a short footer row, or let the code auto-extend
+it.
 
 C<footers> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
@@ -1200,10 +1259,6 @@ C<format> is a parameter to L</new([%hash])>. See L</Constructor and Initializat
 
 Called by L</render([%hash])>.
 
-=head2 format_as_csv_csv().
-
-Called by L</render([%hash])>.
-
 =head2 format_as_internal_github()
 
 Called by L</render([%hash])>.
@@ -1216,6 +1271,14 @@ Called by L</render([%hash])>.
 
 Called by L</render([%hash])>.
 
+=head2 format_as_text_csv().
+
+Called by L</render([%hash])>.
+
+=head2 format_as_text_unicodebox_table()
+
+Called by L</render([%hash])>.
+
 =head2 headers([$arrayref])
 
 Here, the [] indicate an optional parameter.
@@ -1224,7 +1287,8 @@ Returns the headers as an arrayref of strings.
 
 $arrayref, if provided, must be an arrayref of strings.
 
-See L</extend_headers([$extend])> for how to extend a short header row.
+See L</extend_headers([$extend])> for how to extend a short header row, or let the code auto-extend
+it.
 
 C<headers> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
@@ -1274,8 +1338,8 @@ Returns the hashref previously provided.
 
 See L</FAQ#What is the format of the $hashref used in the call to pass_thru()?> for details.
 
-See scripts/html.table.pl and scripts/internal.table.pl for sample code where it is used to add
-attributes to the C<table> tag in HTML output.
+See scripts/html.table.pl, scripts/internal.table.pl and scripts/text.csv.pl for sample code where
+it is used in various ways.
 
 C<pass_thru> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
@@ -1284,13 +1348,15 @@ C<pass_thru> is a parameter to L</new([%hash])>. See L</Constructor and Initiali
 Here, the [] indicate an optional parameter.
 
 Returns an arrayref, where each element is 1 line of the output table. These lines do not have "\n"
-or any other line terminator (e.g. <br/>) added by this module.
+or any other line terminator added by this module.
 
 It's up to you how to handle the output. The simplest thing is to just do:
 
 	print join("\n", @{$table -> render}), "\n";
 
 Note: C<render()> supports the same options as L</new([%hash])>.
+
+C<render()> ignores the C<join> key in the hash.
 
 See also L</render_as_string([%hash])>.
 
@@ -1300,8 +1366,11 @@ Here, the [] indicate an optional parameter.
 
 Returns the rendered data as a string.
 
-C<render_as_string> uses $hash{join}, or the result of calling $self -> join, in Perl's
+C<render_as_string> uses the value of $hash{join}, or the result of calling $self -> join, in Perl's
 C<join($join, @$araref)> to join the elements of the arrayref returned by internally calling
+L</render([%hash])>.
+
+Note: C<render_as_string()> supports the same options as L</new([%hash])>, and passes them all to
 L</render([%hash])>.
 
 See also L</render([%hash])>.
@@ -1323,7 +1392,8 @@ C<undef> is a parameter to L</new([%hash])>. See L</Constructor and Initializati
 
 =head2 widths()
 
-Returns an arrayref of the width of each column, after the data is cleaned and rectified.
+Returns an arrayref of the width of each column, after the data is cleaned and rectified, but before
+it has been aligned or padded.
 
 =head1 FAQ
 
@@ -1337,7 +1407,7 @@ Firstly, you must import them with:
 
 Then you can use them in the constructor:
 
-	my($table) = Text::Table::Manifold -> new(alignment => align_center);
+	my($table) = Text::Table::Manifold -> new(empty => empty_as_text);
 
 And/or you can use them in method calls:
 
@@ -1355,7 +1425,9 @@ The parameters, one per column, to L</alignment([$arrayref])> must be one of the
 
 =item o align_left  => 0
 
-=item o align_left  => 1
+=item o align_center => 1
+
+So-spelt. Not 'centre'.
 
 =item o align_right => 2
 
@@ -1391,7 +1463,7 @@ See also L</undef([$undef])>.
 
 Warning: This updates the original data!
 
-=head2 What are the constants for escaping HTML and URIs?
+=head2 What are the constants for escaping HTML entities and URIs?
 
 The parameter to L</escape([$escape])> must be one of the following:
 
@@ -1448,25 +1520,29 @@ The parameter to L</format([$format])> must be one of the following:
 
 =over 4
 
-=item o format_internal_boxed  => 0
+=item o format_internal_boxed        => 0
 
 Render internally.
 
-=item o format_text_csv        => 1
+=item o format_text_csv              => 1
 
 L<Text::CSV> is loaded at runtime if this option is used.
 
-=item o format_internal_github => 2
+=item o format_internal_github       => 2
 
 Render internally.
 
-=item o format_internal_html   => 3
+=item o format_internal_html         => 3
 
 Render internally.
 
-=item o format_html_table      => 4
+=item o format_html_table            => 4
 
 L<HTML::Table> is loaded at runtime if this option is used.
+
+=item o format_text_unicodebox_table => 5
+
+L<Text::UnicodeBox::Table> is loaded at runtime if this option is used.
 
 =back
 
@@ -1496,19 +1572,29 @@ It takes these (key => value) pairs:
 
 =over 4
 
-=item o format_html_table => {...}
+=item o new => $hashref
 
-Pass these parameters to L<HTML::Table>'s new() method, for external rendering.
+=over 4
 
-=item o format_internal_html => {table => {...} }
+=item o When using L<HTML::Table>, for external rendering of HTML
 
-Pass these parameters to the C<table> tag, for internal rendering.
+$hashref is passed to the L<HTML::Table> constructor.
 
-=item o format_text_csv => {...}
+=item o When using L<Text::CSV>, for external rendering of CSV
 
-Pass these parameters to L<Text::CSV>'s new() method, for external rendering.
+$hashref is passed to the L<Text::CSV> constructor.
+
+=item o For internal rendering of HTML
+
+$$hashref{table} is used to specify parameters for the C<table> tag.
+
+Currently, C<table> is the only tag supported by this mechanism.
 
 =back
+
+=back
+
+See html.table.pl, internal.html.pl and text.csv.pl, all in the scripts/ directory.
 
 =head2 What are the constants for handling cell values which are undef?
 
@@ -1542,10 +1628,11 @@ Warning: This updates the original data!
 
 =head2 Will you extend the program to support other external renderers?
 
-Possibly. I've looked a number of times at L<PDF::Table>, for example, but it is just a little bit
-too complex. Similarly, L<Text::ANSITable> has too many methods.
+Possibly, but only if the extension matches the spirit of this module, which is roughly: Keep it
+simple, and provide enough options but not too many options.
 
-Email me if you have other modules in mind.
+I've looked a number of times at L<PDF::Table>, for example, but it is just a little bit too
+complex. Similarly, L<Text::ANSITable> has too many methods.
 
 See also L</TODO>.
 
@@ -1570,8 +1657,8 @@ See L<Text::ASCIITable> and L<Text::Table>.
 
 =item o Embedded newlines
 
-Cell values which are text could be split at each "\n" character, to find the widest line within the
-cell. That would be then used as the cell's width.
+Cell values could be split at each "\n" character, to find the widest line within the cell. That
+would be then used as the cell's width.
 
 For Unicode, this is complex. See L<http://www.unicode.org/versions/Unicode7.0.0/ch04.pdf>, and
 especially p 192, for 'Line break' controls. Also, the Unicode line breaking algorithm is documented

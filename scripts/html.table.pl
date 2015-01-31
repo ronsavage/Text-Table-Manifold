@@ -30,11 +30,10 @@ $table -> data(
 my(@data) = @{$table -> data};
 
 $table -> empty(empty_as_text);
-$table -> escape(escape_html);
-$table -> pass_thru({format_html_table => {-style => 'color: blue'} });
+$table -> pass_thru({new => {-style => 'color: blue'} });
 $table -> undef(undef_as_text);
 
-print "Style: format_html_table: \n";
+print "Format: format_html_table: \n";
 print join("\n", @{$table -> render(format => format_html_table)}), "\n";
 print "\n";
 

@@ -1,4 +1,4 @@
-Style: format_html_table: 
+Format: format_html_table: 
 
 <table style="color: blue">
 <tbody>
