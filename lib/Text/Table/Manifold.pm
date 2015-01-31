@@ -425,9 +425,9 @@ sub format_as_internal_html
 	(
 		# Warning: If I use align_left etc here, Perl does not use the integer values!
 
-		0 => "<span style='text-align:left'>",
-		1 => "<span style='text-align:center'>",
-		2 => "<span style='text-align:right'>",
+		0 => " align='left'",
+		1 => " align='center'",
+		2 => " align='right'",
 	);
 
 	if ($include & include_data)
@@ -448,7 +448,7 @@ sub format_as_internal_html
 				$value = $$data[$row][$column];
 				$value = defined($value) ? $value : '';
 
-				push @line, "<td>$alignment{$align}$value</span></td>";
+				push @line, "<td$alignment{$align}>$value</td>";
 			}
 
 			push @output, '<tr>' . join('',  @line) . '</tr>';
