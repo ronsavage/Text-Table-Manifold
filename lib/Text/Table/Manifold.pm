@@ -193,7 +193,7 @@ has widths =>
 	required => 0,
 );
 
-our $VERSION = '0.90';
+our $VERSION = '1.00';
 
 # ------------------------------------------------
 
@@ -840,13 +840,17 @@ Features:
 
 =item o Align cell values
 
-But not decimal places, yet.
+Each column has its own alignment option, left, center or right.
+
+But decimal places are not alignable, yet.
 
 =item o Escape URIs and HTML
 
 But not both at the same time!
 
 =item o Extend short header/data/footer rows with empty strings or undef
+
+Auto-extension results in all rows being the same length.
 
 This takes place before the transformation, if any, mentioned next.
 
@@ -916,20 +920,22 @@ Key-value pairs accepted in the parameter list (see corresponding methods for de
 
 =over 4
 
-=item o alignment => An imported constant
+=item o alignment => $arrayref of imported constants
 
 A value for this parameter is optional.
 
-Alignment applies equally to every cell in the table.
+There should be one array element per column of data.
 
-Default: align_center.
+Alignment applies equally to every cell in the column.
+
+Default: align_center for every column.
 
 =item o data => $arrayref of arrayrefs
 
 An arrayref of arrayrefs, each one a line of data.
 
-The # of elements in each header/data/footer row does not have to be the same. See the C<extend>
-parameter for more.
+The # of elements in each alignment/header/data/footer row does not have to be the same. See the
+C<extend*> parameters for more. Auto-extension results in all rows being the same length.
 
 A value for this parameter is optional.
 
@@ -942,7 +948,7 @@ A value for this parameter is optional.
 This specifies how to transform cell values which are the empty string. See also the C<undef>
 parameter.
 
-The C<empty> parameter is activated after the C<extend> parameter has been applied.
+The C<empty> parameter is activated after the C<extend*> parameters has been applied.
 
 Default: empty_as_empty. I.e. do not transform.
 
@@ -959,6 +965,8 @@ A value for this parameter is optional.
 The 2 constants available allow you to specify how short data rows are extended. Then, after
 extension, the parameters C<empty> or C<undef> are applied.
 
+The alignment $arrayref is extended with the value C<align_center>, if necessary.
+
 Default: extend_with_empty. I.e. extend short data rows with the empty string.
 
 =item o extend_footers => An imported constant
@@ -970,11 +978,11 @@ extension, the parameters C<empty> or C<undef> are applied.
 
 Default: extend_with_empty. I.e. extend short footer rows with the empty string.
 
-=item o extend_header => An imported constant
+=item o extend_headers => An imported constant
 
 A value for this parameter is optional.
 
-The 2 constants available allow you to specify how short data header are extended. Then, after
+The 2 constants available allow you to specify how short header rows are extended. Then, after
 extension, the parameters C<empty> or C<undef> are applied.
 
 Default: extend_with_empty. I.e. extend short header rows with the empty string.
@@ -985,8 +993,8 @@ A value for this parameter is optional.
 
 These are the column footers. See also the C<headers> option.
 
-The # of elements in each header/data/footer row does not have to be the same. See the C<extend>
-parameter for more.
+The # of elements in each header/data/footer row does not have to be the same. See the C<extend*>
+parameters for more.
 
 Default: [].
 
@@ -994,7 +1002,7 @@ Default: [].
 
 A value for this parameter is optional.
 
-This specifies which type of rendering to perform.
+This specifies which format to output from the rendering methods.
 
 Default: format_internal_boxed.
 
@@ -1004,8 +1012,8 @@ A value for this parameter is optional.
 
 These are the column headers. See also the C<footers> option.
 
-The # of elements in each header/data/footer row does not have to be the same. See the C<extend>
-parameter for more.
+The # of elements in each header/data/footer row does not have to be the same. See the C<extend*>
+parameters for more.
 
 Default: [].
 
@@ -1015,6 +1023,9 @@ A value for this parameter is optional.
 
 Controls whether header/data/footer rows are included in the output.
 
+The are three constants available, and any of them can be combined with '|', the logical OR
+operator.
+
 Default: include_data | include_headers.
 
 =item o join => $string
@@ -1022,7 +1033,7 @@ Default: include_data | include_headers.
 A value for this parameter is optional.
 
 L</render_as_string([%hash])> uses $hash{join}, or $self -> join, in Perl's
-C<join($join, @$araref> to join the elements of the arrayref returned by internally calling
+C<join($join, @$araref)> to join the elements of the arrayref returned by internally calling
 L</render([%hash])>.
 
 Default: ''.
@@ -1050,7 +1061,7 @@ A value for this parameter is optional.
 
 This specifies how to transform cell values which are undef. See also the C<empty> parameter.
 
-The C<undef> parameter is activated after the C<extend> parameter has been applied.
+The C<undef> parameter is activated after the C<extend*> parameters have been applied.
 
 Default: undef_as_undef. I.e. do not transform.
 
@@ -1058,21 +1069,25 @@ Default: undef_as_undef. I.e. do not transform.
 
 =head1 Methods
 
-=head2 alignment([$arrayref_of_alignments_1_per_cell])
+=head2 alignment([$arrayref])
 
 Here, the [] indicate an optional parameter.
 
 Returns the alignment as an arrayref of constants (actually integers), one per column.
 
-$alignment might force spaces to be added to one or both sides of a cell value.
+There should be one element in $arrayref for each column of data. If the $arrayref is too short,
+C<align_center> is the default for the missing alignments.
+
+Obviously, $arrayref might force spaces to be added to one or both sides of a cell value.
 
 Alignment applies equally to every cell in the column.
 
 This happens before any spaces specified by L</padding([$integer])> are added.
 
-See the L</FAQ#What are the constants for alignment?> for legal values for $alignment.
+See the L</FAQ#What are the constants for alignment?> for legal values for the alignments (per
+column).
 
-C<alignment> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<alignment> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 data([$arrayref])
 
@@ -1088,9 +1103,9 @@ Use Perl's C<undef> or '' (the empty string) for missing values.
 
 See L</empty([$empty])> and L</undef([$undef])> for how '' and C<undef> are handled.
 
-See L</extend([$extend])> for how to extend a short data row.
+See L</extend_data([$extend])> for how to extend a short data row.
 
-C<data> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<data> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 empty([$empty])
 
@@ -1105,7 +1120,7 @@ for legal values for $empty.
 
 See also L</undef([$undef])>.
 
-C<empty> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<empty> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 escape([$escape])
 
@@ -1118,7 +1133,7 @@ $escape controls how either HTML or URIs are rendered.
 See the L</FAQ#What are the constants for escaping HTML and URIs?>
 for legal values for $escape.
 
-C<escape> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<escape> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 extend_data([$extend])
 
@@ -1131,7 +1146,7 @@ specifies how to extend those short rows.
 
 See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
 
-C<extend_data> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<extend_data> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 extend_footers([$extend])
 
@@ -1144,7 +1159,7 @@ specifies how to extend those short rows.
 
 See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
 
-C<extend_footers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<extend_footers> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 extend_headers([$extend])
 
@@ -1157,7 +1172,7 @@ specifies how to extend those short rows.
 
 See the L</FAQ#What are the constants for extending short rows?> for legal values for $extend.
 
-C<extend_headers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<extend_headers> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 footers([$arrayref])
 
@@ -1169,7 +1184,7 @@ $arrayref, if provided, must be an arrayref of strings.
 
 See L</extend_footers([$extend])> for how to extend a short footer row.
 
-C<footers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<footers> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 format([$format])
 
@@ -1177,9 +1192,9 @@ Here, the [] indicate an optional parameter.
 
 Returns the format as a constant (actually an integer).
 
-See the L</FAQ#What are the constants for styling?> for legal values for $format.
+See the L</FAQ#What are the constants for formatting?> for legal values for $format.
 
-C<format> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<format> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 format_as_internal_boxed()
 
@@ -1209,9 +1224,9 @@ Returns the headers as an arrayref of strings.
 
 $arrayref, if provided, must be an arrayref of strings.
 
-See L</extend([$extend])> for how to extend a short header row.
+See L</extend_headers([$extend])> for how to extend a short header row.
 
-C<headers> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<headers> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 include([$include])
 
@@ -1222,7 +1237,7 @@ Returns the option specifying if header/data/footer rows are included in the out
 See the L</FAQ#What are the constants for including/excluding rows in the output?> for legal values
 for $include.
 
-C<include> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<include> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 join([$join])
 
@@ -1239,7 +1254,7 @@ L</render_as_string([%hash])>.
 
 The constructor. See L</Constructor and Initialization> for details of the parameter list.
 
-Note: L</render([%hash])> supports the same options as C<new()>.
+Note: L</render([%hash])> and L</render_as_string([%hash])>support the same options as C<new()>.
 
 =head2 padding([$integer])
 
@@ -1249,7 +1264,7 @@ Returns the padding as an integer.
 
 Padding is the # of spaces to add to both sides of the cell value after it has been aligned.
 
-C<padding> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<padding> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 pass_thru([$hashref])
 
@@ -1257,12 +1272,12 @@ Here, the [] indicate an optional parameter.
 
 Returns the hashref previously provided.
 
-The structure of this hashref is detailed in the L</FAQ>.
+See L</FAQ#What is the format of the $hashref used in the call to pass_thru()?> for details.
 
-See scripts/synopsis.pl for sample code where it is used to add attributes to the C<table> tag in
-HTML output.
+See scripts/html.table.pl and scripts/internal.table.pl for sample code where it is used to add
+attributes to the C<table> tag in HTML output.
 
-C<pass_thru> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<pass_thru> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 render([%hash])
 
@@ -1277,7 +1292,7 @@ It's up to you how to handle the output. The simplest thing is to just do:
 
 Note: C<render()> supports the same options as L</new([%hash])>.
 
-C<render> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+See also L</render_as_string([%hash])>.
 
 =head2 render_as_string([%hash])
 
@@ -1286,8 +1301,10 @@ Here, the [] indicate an optional parameter.
 Returns the rendered data as a string.
 
 C<render_as_string> uses $hash{join}, or the result of calling $self -> join, in Perl's
-C<join($join, @$araref> to join the elements of the arrayref returned by internally calling
+C<join($join, @$araref)> to join the elements of the arrayref returned by internally calling
 L</render([%hash])>.
+
+See also L</render([%hash])>.
 
 =head2 undef([$undef])
 
@@ -1302,7 +1319,7 @@ for legal values for $undef.
 
 See also L</empty([$empty])>.
 
-C<undef> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
+C<undef> is a parameter to L</new([%hash])>. See L</Constructor and Initialization>.
 
 =head2 widths()
 
@@ -1332,7 +1349,7 @@ Note how sample code uses the names of the constants. The integer values listed 
 
 =head2 What are the constants for alignment?
 
-The parameter to L</alignment([$arrayref_of_alignments_1_per_cell])> must be one of the following:
+The parameters, one per column, to L</alignment([$arrayref])> must be one of the following:
 
 =over 4
 
@@ -1386,8 +1403,8 @@ This is the default.
 
 =item o escape_html    => 1
 
-Use L<HTML::Entities::Interpolate> to escape HTML. C<HTML::Entities::Interpolate> cannot be loaded
-as runtime, and so is always needed.
+Use L<HTML::Entities::Interpolate> to escape HTML entities. C<HTML::Entities::Interpolate> cannot
+be loaded at runtime, and so is always needed.
 
 =item o escape_uri     => 2
 
@@ -1425,7 +1442,7 @@ See also L</empty([$empty])> and L</undef([$undef])>.
 
 Warning: This updates the original data!
 
-=head2 What are the constants for formating?
+=head2 What are the constants for formatting?
 
 The parameter to L</format([$format])> must be one of the following:
 
@@ -1465,11 +1482,11 @@ Data rows are included in the output.
 
 =item o include_footers => 2
 
-Footer rows are incuded in the output.
+Footer rows are included in the output.
 
 =item o include_headers => 4
 
-Header rows are incuded in the output.
+Header rows are included in the output.
 
 =back
 
@@ -1479,13 +1496,17 @@ It takes these (key => value) pairs:
 
 =over 4
 
-=item o format_text_csv => {...}
+=item o format_html_table => {...}
 
-Pass these parameters to L<Text::CSV>'s new() method, for external rendering.
+Pass these parameters to L<HTML::Table>'s new() method, for external rendering.
 
 =item o format_internal_html => {table => {...} }
 
 Pass these parameters to the C<table> tag, for internal rendering.
+
+=item o format_text_csv => {...}
+
+Pass these parameters to L<Text::CSV>'s new() method, for external rendering.
 
 =back
 
@@ -1519,6 +1540,15 @@ See also L</empty([$undef])>.
 
 Warning: This updates the original data!
 
+=head2 Will you extend the program to support other external renderers?
+
+Possibly. I've looked a number of times at L<PDF::Table>, for example, but it is just a little bit
+too complex. Similarly, L<Text::ANSITable> has too many methods.
+
+Email me if you have other modules in mind.
+
+See also L</TODO>.
+
 =head2 How do I run author tests?
 
 This runs both standard and author tests:
@@ -1540,10 +1570,8 @@ See L<Text::ASCIITable> and L<Text::Table>.
 
 =item o Embedded newlines
 
-Cell values which are HTML could be split at each "<br/>" and "<br />" for the same reason.
-
 Cell values which are text could be split at each "\n" character, to find the widest line within the
-cell. That is then used as the cell's width.
+cell. That would be then used as the cell's width.
 
 For Unicode, this is complex. See L<http://www.unicode.org/versions/Unicode7.0.0/ch04.pdf>, and
 especially p 192, for 'Line break' controls. Also, the Unicode line breaking algorithm is documented
