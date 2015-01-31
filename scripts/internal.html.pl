@@ -37,7 +37,7 @@ $table -> pass_thru({format_internal_html => {table => {align => 'center', borde
 $table -> undef(undef_as_text);
 
 print "Format: as_internal_html: \n";
-print $table -> render_as_string(format => format_internal_html, newline => "\n"), "\n";
+print $table -> render_as_string(format => format_internal_html, join => "\n"), "\n";
 print "\n";
 
 # Note: Restore the saved data.

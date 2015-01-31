@@ -153,7 +153,7 @@ has include =>
 	required => 0,
 );
 
-has newline =>
+has join =>
 (
 	default  => sub{return ''},
 	is       => 'rw',
@@ -647,9 +647,9 @@ sub render
 sub render_as_string
 {
 	my($self, %hash) = @_;
-	my($newline)     = defined($hash{newline}) ? $hash{newline} : $self -> newline;
+	my($join) = defined($hash{join}) ? $hash{join} : $self -> join;
 
-	return join($newline, @{$self -> render(%hash)});
+	return join($join, @{$self -> render(%hash)});
 
 } # End of render_as_string.
 
@@ -754,7 +754,7 @@ This is scripts/synopsis.pl:
 
 	# Etc.
 
-This is the output of synopsis.pl:
+This is data/synopsis.log, the output of synopsis.pl:
 
 	Format: format_internal_boxed:
 	+-------------------------+-----------+---------------+----------+
@@ -773,9 +773,15 @@ This is the output of synopsis.pl:
 	|  Two ticks: ✔✔    |        undef        |  <table><tr><td>TBA</td></tr></table>  |
 	+-------------------+---------------------+----------------------------------------+
 
+The latter table renders perfectly in FF, but not so in Chrome (today, 2015-01-31).
+
 =head1 Description
 
-Renders your data as tables of various types, using options to the L</format([$format]) method:
+Outputs tables in any one of several supported types.
+
+The format of the output is controlled by the C<format> parameter to C<new()>, or by the parameter
+to the L</format([$format])> method, or by the value of the C<format> key in the hash passed to
+L</render([%hash])> and L</render_as_string(%hash])>, and must be one of these imported constants:
 
 =over 4
 
@@ -785,16 +791,22 @@ All headers, footers and table data are surrounded by ASCII characters.
 
 The rendering is done internally.
 
+See scripts/internal.boxed.pl and output data/internal.boxed.log.
+
 =item o format_text_csv
 
 Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
-the C<Text::CSV> object.
+the C<Text::CSV> object constructor.
+
+See scripts/text.csv.pl and output data/text.csv.log.
 
 =item o format_internal_github
 
 Render as github-flavoured markdown.
 
 The rendering is done internally.
+
+See scripts/internal.github.pl and output data/internal.github.log.
 
 =item o format_internal_html
 
@@ -803,48 +815,60 @@ table.
 
 The rendering is done internally.
 
+See scripts/internal.html.pl and output data/internal.html.log.
+
 =item o format_html_table
 
 Passes the data to L<HTML::Table>. You can use the L</pass_thru([$hashref])> method to set options
-for the C<HTML::Table> object.
+for the C<HTML::Table> object constructor.
 
-Warning: You must use C<Text::Table::Manifold>'s data() method, or the same-named parameter to new(),
-and not the C<-data> option to C<HTML::Table>. This is because my module processes the data before
-calling the C<HTML::Table>'s new() method.
+Warning: You must use C<Text::Table::Manifold>'s C<data()> method, or the C<data> parameter to
+C<new()>, and not the C<-data> option to C<HTML::Table>. This is because the module processes the
+data before calling the C<HTML::Table> constructor.
 
 =back
 
-See scripts/synopsis.pl, and the L</FAQ>, for various topics, including:
+Features:
 
 =over 4
 
-=item o UFT8 handling
+=item o Generic interface to all possible table formats
 
-See scripts/utf8.pl and data/utf8.log.
+=item o Separately specify header/data/footer rows
 
-=item o Including/excluding headers/data/footers
+=item o Include/exclude header/data/footer rows
 
-=item o Extending short headers/data/footers rows
-
-=item o Tranforming cell values which are empty strings and undef
-
-=item o Aligning cell values
+=item o Align cell values
 
 But not decimal places, yet.
 
-=item o Padding cell values
-
-=item o Escaping URIs and HTML
+=item o Escape URIs and HTML
 
 But not both at the same time!
 
+=item o Extend short header/data/footer rows with empty strings or undef
+
+This takes place before the transformation, if any, mentioned next.
+
+=item o Tranform cell values which are empty strings and undef
+
+=item o Pad cell values
+
+=item o Handle UFT8
+
+=item o Return the table as an arrayref of lines or as a string
+
+The arrayref is returned by L</render([%hash])>, and the string by L</render_as_string([%hash])>.
+
+When returning a string by calling C<render_as_string()>, you can specify how the lines in the
+string are joined.
+
+In the same way the C<format> parameter discussed above controls the output, the C<join>
+parameter controls the join.
+
 =back
 
-Results are returned as an arrayref, by L</render([%hash])>, or as a string, by
-L</render_as_string([%hash])>. The latter accepts a (newline => $string) pair in %hash, which is used
-to join the elements of the internal call to L</render([%hash])>. $string defaults to ''.
-
-See data/*.log for output corresponding to scripts/*.pl.
+See also scripts/synopsis.pl, and the output data/synopsis.log.
 
 =head1 Distributions
 
@@ -993,12 +1017,12 @@ Controls whether header/data/footer rows are included in the output.
 
 Default: include_data | include_headers.
 
-=item o newline => $string
+=item o join => $string
 
 A value for this parameter is optional.
 
-L</render_as_string([%hash])> uses $hash{newline}, or $self -> newline, in Perl's
-C<join($newline, @$araref> to join the elements of the arrayref returned by internally calling
+L</render_as_string([%hash])> uses $hash{join}, or $self -> join, in Perl's
+C<join($join, @$araref> to join the elements of the arrayref returned by internally calling
 L</render([%hash])>.
 
 Default: ''.
@@ -1200,6 +1224,17 @@ for $include.
 
 C<include> is a parameter to L</new(%hash)>. See L</Constructor and Initialization>.
 
+=head2 join([$join])
+
+Here, the [] indicate an optional parameter.
+
+Returns the string used to join lines in the table when you call L</render_as_string([%hash])>.
+
+$join is the parameter passed to the Perl function C<join()> by C<render_as_string()>.
+
+Further, you can use the key C<join> in %hash to pass a value directly to
+L</render_as_string([%hash])>.
+
 =head2 new([%hash])
 
 The constructor. See L</Constructor and Initialization> for details of the parameter list.
@@ -1250,8 +1285,9 @@ Here, the [] indicate an optional parameter.
 
 Returns the rendered data as a string.
 
-C<render_as_string> uses $hash{newline}, or $self -> newline, in Perl's C<join($newline, @$araref>
-to join the elements of the arrayref returned by internally calling L</render([%hash])>.
+C<render_as_string> uses $hash{join}, or the result of calling $self -> join, in Perl's
+C<join($join, @$araref> to join the elements of the arrayref returned by internally calling
+L</render([%hash])>.
 
 =head2 undef([$undef])
 
