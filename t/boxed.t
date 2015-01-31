@@ -11,9 +11,9 @@ use Text::Table::Manifold ':constants';
 
 sub run_test
 {
-	my($table, $style, $first_char, $last_char) = @_;
+	my($table, $format, $first_char, $last_char) = @_;
 
-	$table -> style($style);
+	$table -> format($format);
 
 	my(@table)      = @{$table -> render};
 	my(@first_line) = split(//, $table[0]);
