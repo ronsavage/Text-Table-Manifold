@@ -837,7 +837,7 @@ All headers, footers and table data are surrounded by ASCII characters.
 
 The rendering is done internally.
 
-See scripts/internal.boxed.pl and output data/internal.boxed.log.
+See scripts/internal.boxed.pl and output file data/internal.boxed.log.
 
 =item o format_internal_github
 
@@ -845,7 +845,7 @@ Render as github-flavoured markdown.
 
 The rendering is done internally.
 
-See scripts/internal.github.pl and output data/internal.github.log.
+See scripts/internal.github.pl and output file data/internal.github.log.
 
 =item o format_internal_html
 
@@ -854,7 +854,7 @@ table.
 
 The rendering is done internally.
 
-See scripts/internal.html.pl and output data/internal.html.log.
+See scripts/internal.html.pl and output file data/internal.html.log.
 
 =item o format_html_table
 
@@ -870,15 +870,15 @@ data before calling the C<HTML::Table> constructor.
 Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
 the C<Text::CSV> object constructor.
 
-See scripts/html.table.pl and output data/html.table.log, and also scripts/text.csv.pl and output
-data/text.csv.log.
+See scripts/html.table.pl and output file data/html.table.log, and also scripts/text.csv.pl and output
+file data/text.csv.log.
 
 =item o format_text_unicodebox_table
 
 Passes the data to L<Text::UnicodeBox::Table>. You can use the L</pass_thru([$hashref])> method to
 set options for the C<Text::UnicodeBox::Table> object constructor.
 
-See scripts/text.unicodebox.table.pl and output data/text.unicodebox.table.log.
+See scripts/text.unicodebox.table.pl and output file data/text.unicodebox.table.log.
 
 =back
 
@@ -896,8 +896,8 @@ Features:
 
 Each column has its own alignment option, left, center or right.
 
-For internally generated HTML, this is does with CSS divs within each td, not with the obsolete
-td align attribute.
+For internally generated HTML, this is done with a CSS C<div> within each C<td>, not with the obsolete
+C<td align> attribute.
 
 But decimal places are not alignable, yet.
 
@@ -1588,6 +1588,12 @@ It takes these (key => value) pairs:
 
 =over 4
 
+=item o For internal rendering of HTML
+
+$$hashref{table} is used to specify parameters for the C<table> tag.
+
+Currently, C<table> is the only tag supported by this mechanism.
+
 =item o When using L<HTML::Table>, for external rendering of HTML
 
 $hashref is passed to the L<HTML::Table> constructor.
@@ -1596,11 +1602,9 @@ $hashref is passed to the L<HTML::Table> constructor.
 
 $hashref is passed to the L<Text::CSV> constructor.
 
-=item o For internal rendering of HTML
+=item o When using L<Text::UnicodeBox::Table>, for external rendering of boxes
 
-$$hashref{table} is used to specify parameters for the C<table> tag.
-
-Currently, C<table> is the only tag supported by this mechanism.
+$hashref is passed to the L<Text::UnicodeBox::Table> constructor.
 
 =back
 
@@ -1697,7 +1701,10 @@ See L<Text::ANSITable>.
 
 =item o Subtotal support
 
-Maybe one day.
+Maybe one day. I did see a subtotal feature in a module while researching this, but I can't find it
+any more.
+
+See L<Data::Table>. It has grouping features.
 
 =back
 
