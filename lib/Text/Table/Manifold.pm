@@ -407,6 +407,12 @@ sub format_as_internal_html
 	my($table_options) = ${$self -> pass_thru}{new}{table} || {};
 	my(@table_keys)    = sort keys %$table_options;
 	my($include)       = $self -> include;
+	my(%align)         =
+	(
+		0   => "<div style='text-align: left'>",
+		1 => "<div style='text-align: center'>",
+		2  => "<div style='text-align: right'>",
+	);
 
 	if (scalar @table_keys)
 	{
@@ -415,28 +421,24 @@ sub format_as_internal_html
 
 	my(@output) = "<table$table>";
 
+	my(@line);
+	my($value);
+
 	if ( ($include & include_headers) && ($#$headers >= 0) )
 	{
 		push @output, '<thead>';
-		push @output, '<tr><th>' . join('</th><th>', @$headers) . '</th></tr>' if ($#$headers >= 0);
+
+		for my $column (0 .. $#$headers)
+		{
+			push @line, "<th>$align{$$alignment[$column]}$$headers[$column]</div></th>";
+		}
+
+		push @output, '<tr>' . join('', @line) . '</tr>';
 		push @output, '</thead>';
 	}
 
-	my(%alignment) =
-	(
-		# Warning: If I use align_left etc here, Perl does not use the integer values!
-
-		0 => " align='left'",
-		1 => " align='center'",
-		2 => " align='right'",
-	);
-
 	if ($include & include_data)
 	{
-		my($align);
-		my(@line);
-		my($value);
-
 		for my $row (0 .. $#$data)
 		{
 			@line = ();
@@ -445,11 +447,10 @@ sub format_as_internal_html
 
 			for my $column (0 .. $#{$$data[0]})
 			{
-				$align = $$alignment[$column];
 				$value = $$data[$row][$column];
 				$value = defined($value) ? $value : '';
 
-				push @line, "<td$alignment{$align}>$value</td>";
+				push @line, "<td>$align{$$alignment[$column]}$value</div></td>";
 			}
 
 			push @output, '<tr>' . join('',  @line) . '</tr>';
@@ -459,7 +460,15 @@ sub format_as_internal_html
 	if ( ($include & include_footers) && ($#$footers >= 0) )
 	{
 		push @output, '<tfoot>';
-		push @output, '<tr><th>' . join('</th><th>', @$footers) . '</th></tr>' if ($#$footers >= 0);
+
+		@line = ();
+
+		for my $column (0 .. $#$footers)
+		{
+			push @line, "<th>$align{$$alignment[$column]}$$footers[$column]</div></th>";
+		}
+
+		push @output, '<tr>' . join('', @line) . '</tr>';
 		push @output, '<tfoot>';
 	}
 
@@ -1629,7 +1638,8 @@ Warning: This updates the original data!
 =head2 Will you extend the program to support other external renderers?
 
 Possibly, but only if the extension matches the spirit of this module, which is roughly: Keep it
-simple, and provide enough options but not too many options.
+simple, and provide just enough options but not too many options. IOW, there is no point in passing
+a huge number of options to an external class when you can use that class directly anyway.
 
 I've looked a number of times at L<PDF::Table>, for example, but it is just a little bit too
 complex. Similarly, L<Text::ANSITable> has too many methods.
