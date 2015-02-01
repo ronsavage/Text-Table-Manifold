@@ -896,6 +896,9 @@ Features:
 
 Each column has its own alignment option, left, center or right.
 
+For internally generated HTML, this is does with CSS divs within each td, not with the obsolete
+td align attribute.
+
 But decimal places are not alignable, yet.
 
 =item o Escape HTML entities or URIs
