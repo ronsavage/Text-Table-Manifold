@@ -842,7 +842,7 @@ Each column has its own alignment option, left, center or right.
 For internally generated HTML, this is done with a CSS C<div> within each C<td>, not with the obsolete
 C<td align> attribute.
 
-But decimal places are not alignable, yet.
+But decimal places are not alignable, yet, as discussed in the L</TODO>.
 
 =item o Escape HTML entities or URIs
 
@@ -867,7 +867,7 @@ The arrayref is returned by L</render([%hash])>, and the string by L</render_as_
 When returning a string by calling C<render_as_string()> (which calls C<render()>), you can specify
 how the lines in the arrayref are joined.
 
-In the same way the C<format> parameter discussed above controls the output, the C<join>
+In the same way the C<format> parameter discussed just below controls the output, the C<join>
 parameter controls the join.
 
 =back
