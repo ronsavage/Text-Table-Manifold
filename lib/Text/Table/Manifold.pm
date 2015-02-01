@@ -825,6 +825,53 @@ The latter table renders perfectly in FF, but not so in Chrome (today, 2015-01-3
 
 Outputs tables in any one of several supported types.
 
+Features:
+
+=over 4
+
+=item o Generic interface to all supported table formats
+
+=item o Separately specify header/data/footer rows
+
+=item o Separately include/exclude header/data/footer rows
+
+=item o Align cell values
+
+Each column has its own alignment option, left, center or right.
+
+For internally generated HTML, this is done with a CSS C<div> within each C<td>, not with the obsolete
+C<td align> attribute.
+
+But decimal places are not alignable, yet.
+
+=item o Escape HTML entities or URIs
+
+But not both at the same time!
+
+=item o Extend short header/data/footer rows with empty strings or undef
+
+Auto-extension results in all rows being the same length.
+
+This takes place before the transformation, if any, mentioned next.
+
+=item o Tranform cell values which are empty strings and undef
+
+=item o Pad cell values
+
+=item o Handle UFT8
+
+=item o Return the table as an arrayref of lines or as a string
+
+The arrayref is returned by L</render([%hash])>, and the string by L</render_as_string([%hash])>.
+
+When returning a string by calling C<render_as_string()> (which calls C<render()>), you can specify
+how the lines in the arrayref are joined.
+
+In the same way the C<format> parameter discussed above controls the output, the C<join>
+parameter controls the join.
+
+=back
+
 The format of the output is controlled by the C<format> parameter to C<new()>, or by the parameter
 to the L</format([$format])> method, or by the value of the C<format> key in the hash passed to
 L</render([%hash])> and L</render_as_string(%hash])>, and must be one of these imported constants:
@@ -870,8 +917,7 @@ data before calling the C<HTML::Table> constructor.
 Passes the data to L<Text::CSV>. You can use the L</pass_thru([$hashref])> method to set options for
 the C<Text::CSV> object constructor.
 
-See scripts/html.table.pl and output file data/html.table.log, and also scripts/text.csv.pl and output
-file data/text.csv.log.
+See scripts/text.csv.pl and output file data/text.csv.log.
 
 =item o format_text_unicodebox_table
 
@@ -879,53 +925,6 @@ Passes the data to L<Text::UnicodeBox::Table>. You can use the L</pass_thru([$ha
 set options for the C<Text::UnicodeBox::Table> object constructor.
 
 See scripts/text.unicodebox.table.pl and output file data/text.unicodebox.table.log.
-
-=back
-
-Features:
-
-=over 4
-
-=item o Generic interface to all supported table formats
-
-=item o Separately specify header/data/footer rows
-
-=item o Separately include/exclude header/data/footer rows
-
-=item o Align cell values
-
-Each column has its own alignment option, left, center or right.
-
-For internally generated HTML, this is done with a CSS C<div> within each C<td>, not with the obsolete
-C<td align> attribute.
-
-But decimal places are not alignable, yet.
-
-=item o Escape HTML entities or URIs
-
-But not both at the same time!
-
-=item o Extend short header/data/footer rows with empty strings or undef
-
-Auto-extension results in all rows being the same length.
-
-This takes place before the transformation, if any, mentioned next.
-
-=item o Tranform cell values which are empty strings and undef
-
-=item o Pad cell values
-
-=item o Handle UFT8
-
-=item o Return the table as an arrayref of lines or as a string
-
-The arrayref is returned by L</render([%hash])>, and the string by L</render_as_string([%hash])>.
-
-When returning a string by calling C<render_as_string()> (which calls C<render()>), you can specify
-how the lines in the arrayref are joined.
-
-In the same way the C<format> parameter discussed above controls the output, the C<join>
-parameter controls the join.
 
 =back
 
