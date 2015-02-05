@@ -1678,9 +1678,9 @@ would be then used as the cell's width.
 
 For Unicode, this is complex. See L<http://www.unicode.org/versions/Unicode7.0.0/ch04.pdf>, and
 especially p 192, for 'Line break' controls. Also, the Unicode line breaking algorithm is documented
-in L<http://www.unicode.org/reports/tr14/tr14-33.html>.
+in L<http://www.unicode.org/reports/tr14/>.
 
-Perl modules relevant to this are listed under L</See also#Line Breaking>.
+Perl modules and other links relevant to this topic are listed under L</See Also#Line Breaking>.
 
 =item o Nested tables
 
@@ -1779,7 +1779,10 @@ L<Text::Wrap>
 
 L<Text::WrapI18N>
 
-L<Unicode::LineBreak>
+L<Unicode::LineBreak>. The distro also includes L<Unicode::GCString>, which I use already in
+Text::Table::Manifold.
+
+L<UNICODE LINE BREAKING ALGORITHM|http://unicode.org/reports/tr14/>
 
 =head1 Machine-Readable Change Log
 
