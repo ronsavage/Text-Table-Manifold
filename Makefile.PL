@@ -29,19 +29,19 @@ my(%params) =
 	PL_FILES  => {},
 	PREREQ_PM =>
 	{
-		'Const::Exporter'             => 'v0.2.3',
+		'Const::Exporter' => 'v0.2.3',
 		'HTML::Entities::Interpolate' => 1.05,
-		'List::AllUtils'              => 0.08,
-		'Module::Runtime'             => 0.014,
-		'Moo'                         => 1.006000,
-		'open'                        => 0,
-		'strict'                      => 0,
-		'Test::More'                  => 1.001006,
-#		'Test::Pod'                   => 1.45, # Make it optional. See xt/author/pod.t
-		'Types::Standard'             => 1.000004,
-		'Unicode::GCString'           => 2013.10,
-		'utf8'                        => 0,
-		'warnings'                    => 0,
+		'List::AllUtils' => 0.08,
+		'Module::Runtime' => 0.014,
+		'Moo' => 1.006000,
+		'open' => 0,
+		'strict' => 0,
+		'Test::More' => 1.001014,
+		'Test::Pod' => 1.48,
+		'Types::Standard' => 1.000004,
+		'Unicode::GCString' => 2013.10,
+		'utf8' => 0,
+		'warnings' => 0,
 	},
 	VERSION_FROM => 'lib/Text/Table/Manifold.pm',
 );
@@ -57,17 +57,17 @@ if ($ExtUtils::MakeMaker::VERSION ge '6.46')
 	{
 		'meta-spec' =>
 		{
-			version => 2,
+		'version' => 2,
 		},
 		resources   =>
 		{
-			bugtracker => 'https://rt.cpan.org/Public/Dist/Display.html?Name=Text-Table-Manifold',
-			license    => 'http://opensource.org/licenses/Artistic-2.0',
+		'bugtracker' => 'https://rt.cpan.org/Public/Dist/Display.html?Name=Text-Table-Manifold',
+		'license' => 'http://opensource.org/licenses/Artistic-2.0',
 			repository =>
 			{
-				type => 'git',
-				url  => 'https://github.com/ronsavage/Text-Table-Manifold.git',
-				web  => 'https://github.com/ronsavage/Text-Table-Manifold',
+		'type' => 'git',
+		'url' => 'https://github.com/ronsavage/Text-Table-Manifold.git',
+		'web' => 'https://github.com/ronsavage/Text-Table-Manifold',
 			},
 		},
 	};
