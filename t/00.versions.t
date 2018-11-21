@@ -5,50 +5,19 @@ use warnings;
 
 # I tried 'require'-ing modules but that did not work.
 
-use WWW::Garden::Design; # For the version #.
+use Text::Table::Manifold; # For the version #.
 
 use Test::More;
 
-use base;
-use boolean;
-use Config::Tiny;
-use Data::Dumper::Concise;
-use Date::Simple;
-use DBD::SQLite;
-use DBI;
-use DBIx::Admin::CreateTable;
-use DBIx::Simple;
-use Encode;
-use File::Copy;
-use File::HomeDir;
-use File::Spec;
-use File::Slurper;
-use FindBin;
-use Getopt::Long;
-use Imager;
-use Imager::Fill;
-use lib;
-use Lingua::EN::Inflect;
-use Mojolicious;
-use Mojo::Base;
-use Mojo::Log;
-use Mojo::Pg;
-use MojoX::Validate::Util;
+use Const::Exporter;
+use HTML::Entities::Interpolate;
+use List::AllUtils;
+use Module::Runtime;
 use Moo;
-use Params::Classify;
-use Path::Tiny;
-use Pod::Usage;
-use Sort::Naturally;
+use Scalar::List::Utils;
 use strict;
-use SVG::Grid;
-use Text::CSV;
-use Text::CSV::Encoded;
-use Text::Xslate;
-use Time::HiRes;
-use Try::Tiny;
 use Types::Standard;
-use Unicode::Collate;
-use URI::Find::Schemeless;
+use Unicode::GCString;
 use utf8;
 use warnings;
 
@@ -58,51 +27,20 @@ pass('All external modules loaded');
 
 my(@modules) = qw
 /
-	base
-	boolean
-	Config::Tiny
-	Data::Dumper::Concise
-	Date::Simple
-	DBD::SQLite
-	DBI
-	DBIx::Admin::CreateTable
-	DBIx::Simple
-	Encode
-	File::Copy
-	File::HomeDir
-	File::Spec
-	File::Slurper
-	FindBin
-	Getopt::Long
-	Imager
-	Imager::Fill
-	lib
-	Lingua::EN::Inflect
-	Mojolicious
-	Mojo::Base
-	Mojo::Log
-	Mojo::Pg
-	MojoX::Validate::Util
+	Const::Exporter
+	HTML::Entities::Interpolate
+	List::AllUtils
+	Module::Runtime
 	Moo
-	Params::Classify
-	Path::Tiny
-	Pod::Usage
-	Sort::Naturally
+	Scalar::List::Utils
 	strict
-	SVG::Grid
-	Text::CSV
-	Text::CSV::Encoded
-	Text::Xslate
-	Time::HiRes
-	Try::Tiny
 	Types::Standard
-	Unicode::Collate
-	URI::Find::Schemeless
+	Unicode::GCString
 	utf8
 	warnings
 /;
 
-diag "Testing WWW::Garden::Design V $WWW::Garden::Design::VERSION";
+diag "Testing Text::Table::Manifold V $Text::Table::Manifold::VERSION";
 
 for my $module (@modules)
 {
