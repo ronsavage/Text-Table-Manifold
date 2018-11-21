@@ -42,6 +42,11 @@ my(%params) =
 		'utf8'							=> 0,
 		'warnings'						=> 0,
 	},
+	TEST_REQUIRES =>
+	{
+		'Test::More'	=> 1.001002,
+		'Test::Pod'		=> 1.48,
+	},
 	VERSION_FROM => 'lib/Text/Table/Manifold.pm',
 );
 
