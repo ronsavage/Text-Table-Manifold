@@ -47,7 +47,7 @@ my(%params) =
 
 if ( ($ExtUtils::MakeMaker::VERSION =~ /^\d\.\d\d$/) && ($ExtUtils::MakeMaker::VERSION > 6.30) )
 {
-	$params{LICENSE} = 'artistic_2';
+	$params{LICENSE} = 'perlartistic';
 }
 
 if ($ExtUtils::MakeMaker::VERSION ge '6.46')
@@ -61,7 +61,7 @@ if ($ExtUtils::MakeMaker::VERSION ge '6.46')
 		resources =>
 		{
 			bugtracker	=> 'https://rt.cpan.org/Public/Dist/Display.html?Name=Text-Table-Manifold',
-			license		=> 'http://opensource.org/licenses/Artistic-2.0',
+			license		=> 'https://perldoc.perl.org/perlartistic.html',
 			repository	=>
 			{
 				type	=> 'git',
