@@ -14,7 +14,7 @@ use HTML::Entities::Interpolate;
 use List::AllUtils;
 use Module::Runtime;
 use Moo;
-use Scalar::List::Utils;
+use Scalar::Util;
 use strict;
 use Types::Standard;
 use Unicode::GCString;
@@ -32,7 +32,7 @@ my(@modules) = qw
 	List::AllUtils
 	Module::Runtime
 	Moo
-	Scalar::List::Utils
+	Scalar::Util
 	strict
 	Types::Standard
 	Unicode::GCString
