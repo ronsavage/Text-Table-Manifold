@@ -38,7 +38,7 @@ my(%params) =
 		'Scalar::Util'					=> 1.50,
 		'strict'						=> 0,
 		'Types::Standard'				=> 1.000004,
-		'Unicode::GCString'				=> 2013.10,
+		'String::TtyLength'				=> 0.02,
 		'utf8'							=> 0,
 		'warnings'						=> 0,
 	},
