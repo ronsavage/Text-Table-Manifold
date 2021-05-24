@@ -194,7 +194,7 @@ has widths =>
 	required => 0,
 );
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 # ------------------------------------------------
 
@@ -1718,6 +1718,8 @@ L<Data::Formatter::Text>
 L<Data::Tab>
 
 L<Data::Table>
+
+L<Data::Table::Text>
 
 L<Data::Tabulate>
 

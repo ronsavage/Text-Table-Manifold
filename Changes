@@ -1,5 +1,8 @@
 Revision history for Perl extension Text::Table::Manifold.
 
+1.04  2021-05-24T17:48:00
+	- Add Data::Table::Text to See Also. Suggested by Philip R Brenan.
+
 1.03  2021-02-07T17:38:00
 	- Update POD to change RT to github.
 	- Reformat Makefile.PL.
